@@ -13,7 +13,7 @@
   --white:#ffffff; --black:#0d0d0d; --gray:#888; --light:#f4f6f8;
   --border:#e2e6ea; --sky:#e8f4fd; --sky2:#d0eaf8; --sky3:#b8dff5;
   --sky-dark:#4a9cc7; --accent:#1a7fc1; --muted:#666;
-  --glass:rgba(232,244,253,0.88); --gb:rgba(74,156,199,0.25);
+  --glass:rgba(232,244,253,0.96); --gb:rgba(74,156,199,0.45);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;height:100dvh;background:var(--white);color:var(--black);font-family:'Yomogi',cursive;overflow:hidden;}
@@ -481,7 +481,7 @@ function showError(msg){
   setTimeout(()=>{
     document.getElementById('errorScreen').classList.remove('hide');
     document.getElementById('errorMsg').textContent=msg;
-  },500);
+  },1500);
 }
 
 setTimeout(async()=>{
@@ -504,7 +504,7 @@ setTimeout(async()=>{
     console.error(e);
     showError(e.message);
   }
-},500);
+},1500);
 </script>
 
 </body>
