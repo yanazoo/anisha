@@ -784,37 +784,55 @@ map.on('click', e => {
 });
 
 // スプラッシュ → 本編
-async function boot() {
-  // fetch と 0.5秒を並行して待つ
-  const [spots] = await Promise.all([
-    fetchSpots().catch(e => { throw e; }),
-    new Promise(r => setTimeout(r, 500))
-  ]);
-
-  allSpots = spots;
-  filteredSpots = [...allSpots];
-  renderMarkers(filteredSpots);
-  renderDrawerList(filteredSpots);
-  renderMenu(allSpots);
-  if (allSpots.length > 0)
-    map.flyToBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])), {padding:[60,80],duration:1.4});
-
-  // スプラッシュをフェードアウト
+function hideSplash() {
   const splash = document.getElementById('loading');
   splash.style.transition = 'opacity 0.5s ease';
   splash.style.opacity = '0';
+  setTimeout(() => splash.classList.add('hide'), 500);
+}
+
+function showError(msg) {
+  hideSplash();
   setTimeout(() => {
-    splash.classList.add('hide');
-    splash.style.opacity = '';
-    showToast(`✓ ${allSpots.length}件の聖地を発見！`);
+    document.getElementById('errorScreen').classList.remove('hide');
+    document.getElementById('errorMsg').textContent = msg;
   }, 500);
 }
 
-boot().catch(e => {
-  document.getElementById('loading').classList.add('hide');
-  document.getElementById('errorScreen').classList.remove('hide');
-  document.getElementById('errorMsg').textContent = e.message;
-});
+// 0.5秒スプラッシュ後にfetch
+setTimeout(async () => {
+  try {
+    document.getElementById('splashSub').textContent = 'Connecting...';
+    const res = await fetch(SUPABASE_URL + '/rest/v1/spots?select=*&order=count.desc', {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    allSpots = await res.json();
+
+    if (!Array.isArray(allSpots) || allSpots.length === 0) {
+      throw new Error('データが空です');
+    }
+
+    filteredSpots = [...allSpots];
+    renderMarkers(filteredSpots);
+    renderDrawerList(filteredSpots);
+    renderMenu(allSpots);
+    map.flyToBounds(
+      L.latLngBounds(allSpots.map(s => [s.lat, s.lng])),
+      { padding:[60,80], duration:1.4 }
+    );
+    hideSplash();
+    setTimeout(() => showToast('✓ ' + allSpots.length + '件の聖地を発見！'), 600);
+
+  } catch(e) {
+    console.error('fetch error:', e);
+    showError(e.message + ' — ページを再読み込みしてください');
+  }
+}, 500);
 </script>
 
 </body>
