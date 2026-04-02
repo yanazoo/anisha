@@ -785,28 +785,13 @@ map.on('click', e => {
 
 // スプラッシュ → 本編
 async function boot() {
-  // フェードイン演出（1.5秒見せてから読み込み開始）
-  await new Promise(r => setTimeout(r, 1500));
+  // fetch と 0.5秒を並行して待つ
+  const [spots] = await Promise.all([
+    fetchSpots().catch(e => { throw e; }),
+    new Promise(r => setTimeout(r, 500))
+  ]);
 
-  // リトライ付きfetch
-  let attempts = 0;
-  while (attempts < 3) {
-    try {
-      document.getElementById('splashSub').textContent = attempts > 0 ? `再接続中... (${attempts}/3)` : 'Loading Sacred Sites...';
-      allSpots = await fetchSpots();
-      break;
-    } catch(e) {
-      attempts++;
-      if (attempts >= 3) {
-        document.getElementById('loading').classList.add('hide');
-        document.getElementById('errorScreen').classList.remove('hide');
-        document.getElementById('errorMsg').textContent = e.message;
-        return;
-      }
-      await new Promise(r => setTimeout(r, 1200));
-    }
-  }
-
+  allSpots = spots;
   filteredSpots = [...allSpots];
   renderMarkers(filteredSpots);
   renderDrawerList(filteredSpots);
@@ -816,16 +801,20 @@ async function boot() {
 
   // スプラッシュをフェードアウト
   const splash = document.getElementById('loading');
-  splash.style.transition = 'opacity 0.6s ease';
+  splash.style.transition = 'opacity 0.5s ease';
   splash.style.opacity = '0';
   setTimeout(() => {
     splash.classList.add('hide');
     splash.style.opacity = '';
     showToast(`✓ ${allSpots.length}件の聖地を発見！`);
-  }, 600);
+  }, 500);
 }
 
-boot();
+boot().catch(e => {
+  document.getElementById('loading').classList.add('hide');
+  document.getElementById('errorScreen').classList.remove('hide');
+  document.getElementById('errorMsg').textContent = e.message;
+});
 </script>
 
 </body>
