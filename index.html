@@ -379,12 +379,13 @@ background:var(–sky);
 display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
 }
 .loading.hide { display:none; }
-.loading-logo { font-family:‘Yomogi’,cursive; font-size:56px; letter-spacing:.08em; color:var(–black); line-height:1; }
+.loading-logo { font-family:‘Yomogi’,cursive; font-size:72px; letter-spacing:.08em; color:var(–black); line-height:1; margin-bottom:8px; }
 .loading-en { font-family:‘Yomogi’,cursive; font-size:11px; color:var(–sky-dark); letter-spacing:.12em; margin-top:-8px; }
 .loading-bar { width:180px; height:2px; background:var(–sky3); border-radius:1px; overflow:hidden; }
 .loading-fill { height:100%; background:var(–accent); animation:loadSlide 1.6s ease-in-out infinite; }
 @keyframes loadSlide { 0%{width:0;margin-left:0} 50%{width:60%} 100%{width:0;margin-left:100%} }
-.loading-sub { font-family:‘Yomogi’,cursive; font-size:15px; color:var(–sky-dark); letter-spacing:.1em; }
+.loading-tagline { font-family:‘Yomogi’,cursive; font-size:16px; color:var(–sky-dark); margin:-6px 0 16px; letter-spacing:.04em; }
+.loading-sub { font-family:‘Yomogi’,cursive; font-size:13px; color:var(–sky-dark); letter-spacing:.08em; margin-top:12px; }
 
 /* Error */
 .error-screen { position:fixed; inset:0; z-index:1000; background:var(–sky); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
@@ -421,10 +422,11 @@ transition:transform .25s ease; z-index:2000; white-space:nowrap;
 <!-- Loading -->
 
 <div class="loading" id="loading">
-  <div class="loading-logo">アニしゃ</div>
+  <div class="loading-logo" id="splashLogo">アニしゃ</div>
   <div class="loading-en">AniFrame</div>
-  <div class="loading-bar"><div class="loading-fill"></div></div>
-  <div class="loading-sub">Loading Sacred Sites...</div>
+  <div class="loading-tagline" id="splashTagline">あのシーンを、あなたの手で。</div>
+  <div class="loading-bar" id="splashBar"><div class="loading-fill"></div></div>
+  <div class="loading-sub" id="splashSub">Loading Sacred Sites...</div>
 </div>
 
 <!-- Error -->
@@ -781,23 +783,49 @@ map.on('click', e => {
   if (!e.originalEvent.target.closest('.pin-wrap')) closeDetail();
 });
 
-(async()=>{
-  try {
-    allSpots = await fetchSpots();
-    filteredSpots = [...allSpots];
-    renderMarkers(filteredSpots);
-    renderDrawerList(filteredSpots);
-    renderMenu(allSpots);
-    if (allSpots.length>0)
-      map.flyToBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])), {padding:[60,80],duration:1.4});
-    document.getElementById('loading').classList.add('hide');
-    showToast(`✓ ${allSpots.length}件の聖地を発見！`);
-  } catch(e) {
-    document.getElementById('loading').classList.add('hide');
-    document.getElementById('errorScreen').classList.remove('hide');
-    document.getElementById('errorMsg').textContent = e.message;
+// スプラッシュ → 本編
+async function boot() {
+  // フェードイン演出（1.5秒見せてから読み込み開始）
+  await new Promise(r => setTimeout(r, 1500));
+
+  // リトライ付きfetch
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      document.getElementById('splashSub').textContent = attempts > 0 ? `再接続中... (${attempts}/3)` : 'Loading Sacred Sites...';
+      allSpots = await fetchSpots();
+      break;
+    } catch(e) {
+      attempts++;
+      if (attempts >= 3) {
+        document.getElementById('loading').classList.add('hide');
+        document.getElementById('errorScreen').classList.remove('hide');
+        document.getElementById('errorMsg').textContent = e.message;
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1200));
+    }
   }
-})();
+
+  filteredSpots = [...allSpots];
+  renderMarkers(filteredSpots);
+  renderDrawerList(filteredSpots);
+  renderMenu(allSpots);
+  if (allSpots.length > 0)
+    map.flyToBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])), {padding:[60,80],duration:1.4});
+
+  // スプラッシュをフェードアウト
+  const splash = document.getElementById('loading');
+  splash.style.transition = 'opacity 0.6s ease';
+  splash.style.opacity = '0';
+  setTimeout(() => {
+    splash.classList.add('hide');
+    splash.style.opacity = '';
+    showToast(`✓ ${allSpots.length}件の聖地を発見！`);
+  }, 600);
+}
+
+boot();
 </script>
 
 </body>
