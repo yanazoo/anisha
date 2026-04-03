@@ -250,6 +250,9 @@ font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-spac
     </div>
 
 ```
+<!-- AI候補 -->
+<div id="candidatesContainer" style="display:none;margin-bottom:14px;"></div>
+
 <!-- Map Preview -->
 <div class="map-preview" id="mapPreview">
   <div class="map-preview-placeholder" id="mapPlaceholder">
@@ -372,7 +375,7 @@ async function startAnalyze() {
 
   try {
     // Claude APIで解析
-    const result = await analyzeWithClaude(url);
+    const result = await analyzeWithAI(url);
     clearInterval(stepTimer);
 
     // フォームに反映
@@ -381,6 +384,11 @@ async function startAnalyze() {
     document.getElementById('fieldEp').value = result.ep || '';
     document.getElementById('fieldEmoji').value = result.emoji || '📍';
     document.getElementById('fieldLocation').value = result.location || '';
+
+    // 場所候補を表示
+    if (result.candidates && result.candidates.length > 0) {
+      showCandidates(result.candidates);
+    }
 
     // 住所から座標取得
     if (result.location) await geocode(result.location);
@@ -401,15 +409,20 @@ async function startAnalyze() {
   }
 }
 
-// Claude APIで解析
-async function analyzeWithClaude(url) {
-  const type = detectUrlType(url);
-  const prompt = `以下のURLは、アニメ・マンガの聖地巡礼に関する投稿です。
-URLの内容から以下の情報をJSON形式で返してください。
-不明な場合はnullを返してください。
+// AI解析（Vercel関数経由 → Gemini API）
+// プロバイダーを切り替えるだけで別AIに移行可能
+const AI_PROVIDER = 'gemini'; // 'gemini' | 'claude' | 'huggingface'
 
-URL: ${url}
-プラットフォーム: ${type}
+async function analyzeWithAI(url) {
+  const type = detectUrlType(url);
+
+  // URLからサムネイル画像URLを取得
+  const imageUrl = await getImageFromUrl(url, type);
+
+  const prompt = `あなたはアニメ・マンガの聖地巡礼の専門家です。
+この画像はアニメ・マンガの聖地巡礼に関する投稿の画像です。
+
+以下の情報をJSON形式で返してください。不明な場合はnullを返してください。
 
 返すJSONのキー:
 - work: アニメ・マンガの作品名（日本語）
@@ -417,24 +430,79 @@ URL: ${url}
 - location: 住所または場所名（例：東京都新宿区須賀町）
 - ep: エピソード・シーン情報（例：第3話、エンディング）
 - emoji: この場所を表す絵文字1文字
+- confidence: 場所特定の確信度（0-100の数値）
+- candidates: 場所の候補リスト（最大3件、[{name, location, confidence}]形式）
 
-JSONのみ返してください。説明不要。`;
+JSONのみ返してください。説明不要。マークダウン不要。`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  if (AI_PROVIDER === 'gemini') {
+    return await analyzeWithGemini(imageUrl, prompt, url, type);
+  }
+  // 将来: 'claude' | 'huggingface' に切り替え可能
+}
+
+// サムネイル取得
+async function getImageFromUrl(url, type) {
+  if (type === 'youtube') {
+    // YouTube動画IDを抽出してサムネイルURL生成
+    const match = url.match(/(?:v=|youtu\.be\/)([^&
+?#]+)/);
+    if (match) {
+      return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
+    }
+  }
+  // Instagram/TikTok/Xはサムネイル取得が困難なのでURLテキスト解析にフォールバック
+  return null;
+}
+
+// Gemini API（Vercel関数経由）
+async function analyzeWithGemini(imageUrl, prompt, originalUrl, type) {
+  if (!imageUrl) {
+    // 画像なし → テキストのみで解析
+    return await analyzeTextOnly(originalUrl, type);
+  }
+
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, prompt })
+  });
+
+  if (!res.ok) {
+    // 画像解析失敗 → テキストのみにフォールバック
+    return await analyzeTextOnly(originalUrl, type);
+  }
+
+  return await res.json();
+}
+
+// テキストのみ解析（画像取得できない場合のフォールバック）
+async function analyzeTextOnly(url, type) {
+  const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }]
+      imageUrl: null,
+      prompt: `以下のURLはアニメ・マンガの聖地巡礼に関する投稿です。
+URLの文字列から推測できる情報をJSON形式で返してください。
+
+URL: ${url}
+プラットフォーム: ${type}
+
+返すJSONのキー:
+- work: 作品名（日本語、不明ならnull）
+- title: スポット名（不明ならnull）
+- location: 場所名（不明ならnull）
+- ep: エピソード（不明ならnull）
+- emoji: 絵文字（推測できなければ📍）
+- confidence: 確信度（0-100）
+- candidates: []
+
+JSONのみ返してください。`
     })
   });
-
-  if (!res.ok) throw new Error('API error');
-  const data = await res.json();
-  const text = data.content[0].text;
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  if (!res.ok) throw new Error('解析に失敗しました');
+  return await res.json();
 }
 
 // 住所→座標（Nominatim / 無料）
@@ -477,6 +545,47 @@ function showMapPreview(lat, lng, address) {
       <span style="color:var(--success);font-weight:700">✓</span>
     </div>
   `;
+}
+
+// 場所候補を表示
+function showCandidates(candidates) {
+  const container = document.getElementById('candidatesContainer');
+  if (!container) return;
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="font-size:11px;color:var(--sky-dark);margin-bottom:10px;letter-spacing:.06em;">
+      📍 AI が推定した場所候補
+    </div>
+    ${candidates.map((c, i) => `
+      <div onclick="selectCandidate('${c.location||c.name}', ${i})"
+        style="padding:10px 14px;border-radius:8px;border:1px solid var(--gb);
+        background:var(--sky);margin-bottom:8px;cursor:pointer;transition:all .2s;"
+        id="candidate-${i}">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:700;">${c.name||c.location}</div>
+          <div style="font-size:10px;color:var(--sky-dark);background:var(--white);
+            padding:2px 8px;border-radius:10px;border:1px solid var(--gb);">
+            確信度 ${c.confidence||'?'}%
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">📍 ${c.location||'—'}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function selectCandidate(location, idx) {
+  document.querySelectorAll('[id^="candidate-"]').forEach(el => {
+    el.style.background = 'var(--sky)';
+    el.style.borderColor = 'var(--gb)';
+  });
+  const el = document.getElementById('candidate-'+idx);
+  if (el) {
+    el.style.background = 'var(--sky2)';
+    el.style.borderColor = 'var(--sky-dark)';
+  }
+  document.getElementById('fieldLocation').value = location;
+  geocode(location);
 }
 
 // Supabaseに保存
