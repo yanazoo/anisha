@@ -200,7 +200,7 @@ font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-spac
       oninput="onUrlInput(this.value)">
   </div>
   <div class="url-type" id="urlTypeBadge"></div>
-  <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()" disabled>
+  <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()">
     <span>🤖</span><span>AIで解析する</span>
   </button>
 </div>
@@ -323,14 +323,14 @@ const typeLabels = {
 function onUrlInput(val) {
   const type = detectUrlType(val.trim());
   const badge = document.getElementById('urlTypeBadge');
-  const btn = document.getElementById('analyzeBtn');
   if (type) {
     badge.textContent = typeLabels[type];
     badge.className = 'url-type show ' + type;
-    btn.disabled = false;
+  } else if (val.trim().length > 0) {
+    badge.textContent = '🔗 URL';
+    badge.className = 'url-type show other';
   } else {
     badge.className = 'url-type';
-    btn.disabled = true;
   }
 }
 
@@ -356,7 +356,7 @@ const analyzeSteps = [
 
 async function startAnalyze() {
   const url = document.getElementById('urlInput').value.trim();
-  if (!url) return;
+  if (!url) { showToast('URLを入力してください'); return; }
 
   // UI切り替え
   document.getElementById('cardUrl').style.display = 'none';
