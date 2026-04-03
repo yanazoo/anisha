@@ -571,7 +571,12 @@ async function startAnalyze() {
     const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
     if (ytMatch) imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
 
-    const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。キー: work(作品名), title(スポット名), location(住所), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name,location,confidence}]最大3件)。JSONのみ。説明不要。';
+    const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。' +
+      '重要なルール: ' +
+      '1. 場所が特定できない場合はlocationをnullにする（「動画参照」などは禁止）。' +
+      '2. candidatesは実際の地名・住所がある場合のみ返す（不明な場合は空配列）。' +
+      '3. 確信度が50%未満の場合はnullを返す。' +
+      'キー: work(作品名), title(スポット名), location(実際の住所か地名、不明ならnull), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name:地名,location:住所,confidence}]最大3件)。JSONのみ。';
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
