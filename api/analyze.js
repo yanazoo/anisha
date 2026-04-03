@@ -1,5 +1,4 @@
-export default async function handler(req, res) {
-// CORS
+module.exports = async function handler(req, res) {
 res.setHeader(‘Access-Control-Allow-Origin’, ‘*’);
 res.setHeader(‘Access-Control-Allow-Methods’, ‘POST, OPTIONS’);
 res.setHeader(‘Access-Control-Allow-Headers’, ‘Content-Type’);
@@ -13,10 +12,9 @@ const { imageUrl, prompt, url } = req.body || {};
 if (!prompt) return res.status(400).json({ error: ‘prompt is required’ });
 
 try {
-let parts = [{ text: prompt }];
+let parts = [{ text: prompt + (url ? ’\n\nURL: ’ + url : ‘’) }];
 
 ```
-// 画像がある場合は追加
 if (imageUrl) {
   try {
     const imgRes = await fetch(imageUrl);
@@ -27,13 +25,8 @@ if (imageUrl) {
       parts.push({ inline_data: { mime_type: mime, data: b64 } });
     }
   } catch (imgErr) {
-    console.log('image fetch failed, text only:', imgErr.message);
+    console.log('image fetch failed:', imgErr.message);
   }
-}
-
-// URL情報をプロンプトに追加
-if (url) {
-  parts[0].text = prompt + '\n\nURL: ' + url;
 }
 
 const geminiRes = await fetch(
@@ -51,29 +44,26 @@ const geminiRes = await fetch(
 if (!geminiRes.ok) {
   const errText = await geminiRes.text();
   console.error('Gemini error:', errText);
-  return res.status(geminiRes.status).json({ error: 'Gemini API error: ' + errText.slice(0, 200) });
+  return res.status(geminiRes.status).json({ error: 'Gemini error: ' + errText.slice(0, 200) });
 }
 
 const data = await geminiRes.json();
 const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 console.log('Gemini response:', text);
 
-// JSON抽出
 const match = text.match(/\{[\s\S]*\}/);
 if (!match) {
   return res.status(200).json({
     work: null, title: null, location: null,
-    ep: null, emoji: '📍', confidence: 0, candidates: [],
-    raw: text
+    ep: null, emoji: '📍', confidence: 0, candidates: [], raw: text
   });
 }
 
-const result = JSON.parse(match[0]);
-return res.status(200).json(result);
+return res.status(200).json(JSON.parse(match[0]));
 ```
 
 } catch (e) {
-console.error(‘handler error:’, e);
+console.error(‘error:’, e.message);
 return res.status(500).json({ error: e.message });
 }
-}
+};
