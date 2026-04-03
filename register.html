@@ -397,25 +397,53 @@ function onLocationInput(val) {
 }
 
 async function geocode(address) {
-  try {
-    const res = await fetch(
-      'https://nominatim.openstreetmap.org/search?format=json&q=' +
-      encodeURIComponent(address) + '&limit=1&accept-language=ja',
-      { headers: { 'User-Agent': 'AniFrame/1.0' } }
-    );
-    const data = await res.json();
-    if (data && data[0]) {
-      const lat = parseFloat(data[0].lat).toFixed(6);
-      const lng = parseFloat(data[0].lon).toFixed(6);
-      document.getElementById('fLat').value = lat;
-      document.getElementById('fLng').value = lng;
-      document.getElementById('mapPrev').innerHTML =
-        '<div style="font-size:32px">📍</div>' +
-        '<div style="font-size:12px;font-weight:700">' + address + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + lat + ', ' + lng + '</div>' +
-        '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
+  // 複数のジオコーディングAPIを順番に試す
+  const apis = [
+    // Nominatim (OSM) - 無料
+    async () => {
+      const r = await fetch(
+        'https://nominatim.openstreetmap.org/search?format=json&q=' +
+        encodeURIComponent(address) + '&limit=1&accept-language=ja&countrycodes=jp',
+        { headers: { 'User-Agent': 'AniFrame/1.0 (anisha-rho.vercel.app)' } }
+      );
+      const d = await r.json();
+      if (d && d[0]) return { lat: d[0].lat, lng: d[0].lon };
+      return null;
+    },
+    // Photon (Komoot) - 無料バックアップ
+    async () => {
+      const r = await fetch(
+        'https://photon.komoot.io/api/?q=' + encodeURIComponent(address) + '&limit=1&lang=ja'
+      );
+      const d = await r.json();
+      if (d && d.features && d.features[0]) {
+        const coords = d.features[0].geometry.coordinates;
+        return { lat: coords[1], lng: coords[0] };
+      }
+      return null;
     }
-  } catch(e) { console.error('geocode:', e); }
+  ];
+
+  for (const api of apis) {
+    try {
+      const result = await api();
+      if (result) {
+        const lat = parseFloat(result.lat).toFixed(6);
+        const lng = parseFloat(result.lng).toFixed(6);
+        document.getElementById('fLat').value = lat;
+        document.getElementById('fLng').value = lng;
+        document.getElementById('mapPrev').innerHTML =
+          '<div style="font-size:32px">📍</div>' +
+          '<div style="font-size:12px;font-weight:700">' + address + '</div>' +
+          '<div style="font-size:11px;color:var(--muted)">' + lat + ', ' + lng + '</div>' +
+          '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
+        return;
+      }
+    } catch(e) {
+      console.log('geocode fallback:', e.message);
+    }
+  }
+  console.error('全てのジオコーダーが失敗しました');
 }
 
 // ── 登録 ──
