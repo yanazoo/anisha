@@ -445,7 +445,7 @@ JSONのみ返してください。説明不要。マークダウン不要。`;
 async function getImageFromUrl(url, type) {
   if (type === 'youtube') {
     // YouTube動画IDを抽出してサムネイルURL生成
-    const match = url.match(/(?:v=|youtu\.be\/)([^&
+    const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
 ?#]+)/);
     if (match) {
       return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
