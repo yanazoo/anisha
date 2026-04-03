@@ -8,155 +8,130 @@
 <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
 <style>
 :root {
-  --white:#fff; --black:#0d0d0d; --gray:#888; --border:#e2e6ea;
-  --sky:#e8f4fd; --sky2:#d0eaf8; --sky3:#b8dff5; --sky-dark:#4a9cc7;
-  --accent:#1a7fc1; --muted:#666; --success:#22c55e; --error:#ef4444;
+  --white:#fff; --black:#0d0d0d; --border:#e2e6ea;
+  --sky:#e8f4fd; --sky2:#d0eaf8; --sky3:#b8dff5;
+  --sky-dark:#4a9cc7; --accent:#1a7fc1; --muted:#666;
   --glass:rgba(232,244,253,0.96); --gb:rgba(74,156,199,0.35);
+  --success:#22c55e; --error:#ef4444;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{background:var(--sky);min-height:100vh;font-family:'Yomogi',cursive;padding:20px 16px 40px;}
+body{background:var(--sky);min-height:100vh;font-family:'Yomogi',cursive;padding:20px 16px 60px;}
 
 .header{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
-.back-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(–gb);
+.back{width:36px;height:36px;border-radius:8px;border:1px solid var(–gb);
 background:var(–white);display:flex;align-items:center;justify-content:center;
-font-size:16px;cursor:pointer;color:var(–muted);text-decoration:none;}
+font-size:18px;cursor:pointer;color:var(–muted);text-decoration:none;line-height:1;}
 .page-title{font-size:20px;color:var(–black);}
 .page-sub{font-size:11px;color:var(–sky-dark);margin-top:2px;}
 
-/* STEP INDICATOR */
-.steps{display:flex;align-items:center;gap:0;margin-bottom:28px;}
-.step{display:flex;align-items:center;gap:8px;flex:1;}
-.step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
-justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
-border:2px solid var(–border);background:var(–white);color:var(–muted);transition:all .3s;}
-.step-circle.active{border-color:var(–accent);background:var(–accent);color:var(–white);}
-.step-circle.done{border-color:var(–success);background:var(–success);color:var(–white);}
-.step-label{font-size:11px;color:var(–muted);transition:color .3s;}
-.step-label.active{color:var(–accent);font-weight:700;}
-.step-line{flex:1;height:1px;background:var(–border);margin:0 4px;}
+/* STEPS */
+.steps{display:flex;align-items:center;margin-bottom:28px;}
+.step{display:flex;align-items:center;gap:6px;}
+.sc{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
+border:2px solid var(–border);background:var(–white);color:var(–muted);}
+.sc.active{border-color:var(–accent);background:var(–accent);color:var(–white);}
+.sc.done{border-color:var(–success);background:var(–success);color:var(–white);}
+.sl{font-size:11px;color:var(–muted);}
+.sl.active{color:var(–accent);font-weight:700;}
+.sline{flex:1;height:1px;background:var(–border);margin:0 6px;}
 
 /* CARD */
-.card{background:var(–white);border-radius:16px;border:1px solid var(–gb);
-padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(74,156,199,0.08);}
-.card-title{font-size:14px;color:var(–sky-dark);margin-bottom:14px;
-letter-spacing:.06em;display:flex;align-items:center;gap:8px;}
+.card{background:var(–white);border-radius:14px;border:1px solid var(–gb);
+padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(74,156,199,0.08);}
+.card-title{font-size:13px;color:var(–sky-dark);margin-bottom:12px;letter-spacing:.04em;}
 
-/* URL INPUT */
-.url-wrap{position:relative;}
-.url-input{width:100%;height:48px;padding:0 48px 0 14px;
+/* INPUT */
+.url-input{width:100%;height:46px;padding:0 14px;
 background:var(–sky);border:1.5px solid var(–gb);border-radius:10px;
 color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;
-transition:all .2s;}
-.url-input:focus{background:var(–white);border-color:var(–sky-dark);
-box-shadow:0 0 0 3px rgba(74,156,199,0.12);}
+transition:all .2s;margin-bottom:10px;}
+.url-input:focus{background:var(–white);border-color:var(–sky-dark);}
 .url-input::placeholder{color:#aac4d8;}
-.url-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);
-width:24px;height:24px;border-radius:50%;background:var(–sky2);border:none;
-display:flex;align-items:center;justify-content:center;cursor:pointer;
-font-size:12px;color:var(–muted);display:none;}
 
-/* URL TYPE BADGE */
-.url-type{display:inline-flex;align-items:center;gap:6px;
-padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;
-margin-top:8px;opacity:0;transition:opacity .2s;}
-.url-type.show{opacity:1;}
-.url-type.youtube{background:#ffe4e4;color:#cc0000;}
-.url-type.instagram{background:#fce7f3;color:#c026d3;}
-.url-type.twitter{background:#e0f2fe;color:#0284c7;}
-.url-type.tiktok{background:#f0fdf4;color:#16a34a;}
-.url-type.other{background:var(–sky2);color:var(–sky-dark);}
+.url-badge{display:inline-block;padding:3px 10px;border-radius:12px;
+font-size:11px;font-weight:700;margin-bottom:10px;display:none;}
+.url-badge.show{display:inline-block;}
+.url-badge.youtube{background:#ffe4e4;color:#cc0000;}
+.url-badge.other{background:var(–sky2);color:var(–sky-dark);}
 
-.analyze-btn{width:100%;height:46px;margin-top:12px;border-radius:10px;
+.analyze-btn{width:100%;height:46px;border-radius:10px;
 background:var(–accent);border:none;color:var(–white);
 font-family:‘Yomogi’,cursive;font-size:14px;font-weight:700;
-cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+cursor:pointer;transition:all .2s;}
 .analyze-btn:hover{background:#1568a0;}
 .analyze-btn:active{transform:scale(0.98);}
-.analyze-btn:disabled{background:var(–border);color:var(–muted);cursor:not-allowed;}
 
-/* LOADING STATE */
-.analyzing{display:none;flex-direction:column;align-items:center;gap:14px;padding:20px 0;}
+/* ANALYZING */
+.analyzing{display:none;flex-direction:column;align-items:center;gap:12px;padding:24px 0;}
 .analyzing.show{display:flex;}
-.spin{width:40px;height:40px;border-radius:50%;border:3px solid var(–sky3);
-border-top-color:var(–accent);animation:spin .8s linear infinite;}
+.spin{width:40px;height:40px;border-radius:50%;
+border:3px solid var(–sky3);border-top-color:var(–accent);
+animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.analyzing-text{font-size:13px;color:var(–sky-dark);}
-.analyzing-step{font-size:11px;color:var(–muted);margin-top:-6px;}
+.at{font-size:13px;color:var(–sky-dark);}
+.as{font-size:11px;color:var(–muted);}
 
-/* RESULT FORM */
-.result-form{display:none;}
-.result-form.show{display:block;}
-
-.field{margin-bottom:14px;}
-.field-label{font-size:11px;color:var(–sky-dark);margin-bottom:6px;
-letter-spacing:.06em;display:flex;align-items:center;gap:6px;}
-.field-label .req{color:var(–error);font-size:10px;}
-.field-input{width:100%;height:42px;padding:0 12px;
+/* FORM */
+.field{margin-bottom:12px;}
+.fl{font-size:11px;color:var(–sky-dark);margin-bottom:5px;letter-spacing:.04em;}
+.fi{width:100%;height:40px;padding:0 12px;
 background:var(–sky);border:1.5px solid var(–gb);border-radius:8px;
-color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;
-transition:all .2s;}
-.field-input:focus{background:var(–white);border-color:var(–sky-dark);}
-.field-input.error{border-color:var(–error);background:#fff5f5;}
-.field-hint{font-size:10px;color:var(–muted);margin-top:4px;}
-
-/* AI BADGE */
-.ai-badge{display:inline-flex;align-items:center;gap:4px;
-font-size:9px;color:var(–accent);background:var(–sky);
-border:1px solid var(–gb);padding:2px 8px;border-radius:10px;margin-left:6px;}
+color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;}
+.fi:focus{background:var(–white);border-color:var(–sky-dark);}
+.fh{font-size:10px;color:var(–muted);margin-top:3px;}
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
 /* MAP PREVIEW */
-.map-preview{width:100%;height:200px;border-radius:10px;
+.map-prev{width:100%;height:180px;border-radius:10px;
 background:var(–sky2);border:1px solid var(–gb);
 display:flex;align-items:center;justify-content:center;
-position:relative;overflow:hidden;margin-bottom:14px;}
-.map-preview-placeholder{text-align:center;color:var(–sky-dark);}
-.map-preview-placeholder .icon{font-size:36px;margin-bottom:8px;}
-.map-preview-placeholder .text{font-size:12px;}
-.map-pin-preview{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-display:flex;flex-direction:column;align-items:center;}
-.pin-circle-prev{width:36px;height:36px;border-radius:50%;background:var(–accent);
-display:flex;align-items:center;justify-content:center;font-size:16px;
-border:3px solid var(–white);box-shadow:0 3px 10px rgba(0,0,0,0.2);}
-.pin-tail-prev{width:2px;height:8px;background:rgba(0,0,0,0.3);}
-.location-found{position:absolute;bottom:10px;left:10px;right:10px;
-background:rgba(255,255,255,0.95);border-radius:8px;padding:8px 12px;
-font-size:11px;color:var(–black);display:flex;align-items:center;gap:6px;}
+margin-bottom:12px;font-size:13px;color:var(–sky-dark);text-align:center;
+flex-direction:column;gap:8px;}
 
-/* COORDS ROW */
-.coords-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* CANDIDATES */
+.candidates{margin-bottom:12px;}
+.cand-label{font-size:11px;color:var(–sky-dark);margin-bottom:8px;}
+.cand-item{padding:10px 14px;border-radius:8px;border:1px solid var(–gb);
+background:var(–sky);margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.cand-item:hover,.cand-item.selected{background:var(–sky2);border-color:var(–sky-dark);}
+.cand-name{font-size:13px;font-weight:700;}
+.cand-loc{font-size:10px;color:var(–muted);margin-top:2px;}
+.cand-conf{font-size:10px;color:var(–sky-dark);}
 
 /* SUBMIT */
-.submit-btn{width:100%;height:50px;border-radius:12px;
+.submit-btn{width:100%;height:48px;border-radius:12px;
 background:linear-gradient(135deg,var(–accent),#1568a0);
 border:none;color:var(–white);font-family:‘Yomogi’,cursive;
-font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;
-box-shadow:0 4px 14px rgba(26,127,193,0.3);}
-.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(26,127,193,0.4);}
+font-size:15px;font-weight:700;cursor:pointer;
+box-shadow:0 4px 14px rgba(26,127,193,0.3);transition:all .2s;}
+.submit-btn:hover{transform:translateY(-1px);}
 .submit-btn:active{transform:scale(0.98);}
 .submit-btn:disabled{background:var(–border);color:var(–muted);box-shadow:none;cursor:not-allowed;}
 
 /* SUCCESS */
-.success-screen{display:none;flex-direction:column;align-items:center;
-gap:16px;padding:32px 20px;text-align:center;}
-.success-screen.show{display:flex;}
-.success-icon{font-size:56px;animation:pop .4s ease;}
-@keyframes pop{0%{transform:scale(0.5)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
-.success-title{font-size:24px;color:var(–black);}
-.success-sub{font-size:13px;color:var(–muted);line-height:1.8;}
-.success-spot{background:var(–sky);border:1px solid var(–gb);
-border-radius:12px;padding:14px 18px;width:100%;text-align:left;}
-.success-spot-name{font-size:16px;font-weight:700;margin-bottom:4px;}
-.success-spot-work{font-size:12px;color:var(–accent);}
-.success-btns{display:flex;gap:10px;width:100%;}
-.s-btn{flex:1;height:44px;border-radius:10px;font-family:‘Yomogi’,cursive;
-font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
-.s-btn.primary{background:var(–accent);color:var(–white);}
-.s-btn.secondary{background:var(–white);border:1px solid var(–gb);color:var(–black);}
+.success{display:none;flex-direction:column;align-items:center;
+gap:14px;padding:28px 16px;text-align:center;}
+.success.show{display:flex;}
+.sicon{font-size:52px;}
+.stitle{font-size:22px;color:var(–black);}
+.ssub{font-size:12px;color:var(–muted);line-height:1.8;}
+.sspot{background:var(–sky);border:1px solid var(–gb);
+border-radius:10px;padding:12px 16px;width:100%;text-align:left;}
+.sspot-name{font-size:15px;font-weight:700;margin-bottom:3px;}
+.sspot-work{font-size:11px;color:var(–accent);}
+.sbtns{display:flex;gap:8px;width:100%;}
+.sbtn{flex:1;height:42px;border-radius:10px;font-family:‘Yomogi’,cursive;
+font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
+.sbtn.p{background:var(–accent);color:var(–white);}
+.sbtn.s{background:var(–white);border:1px solid var(–gb);color:var(–black);}
 
 /* TOAST */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
-background:var(–black);color:var(–white);padding:10px 20px;border-radius:20px;
-font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-space:nowrap;}
+.toast{position:fixed;bottom:24px;left:50%;
+transform:translateX(-50%) translateY(80px);
+background:var(–black);color:var(–white);
+padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;
+transition:transform .25s;z-index:1000;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 </style>
 
@@ -164,111 +139,98 @@ font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-spac
 <body>
 
 <div class="header">
-  <a class="back-btn" href="javascript:history.back()">←</a>
+  <a class="back" href="/">←</a>
   <div>
     <div class="page-title">スポット登録</div>
     <div class="page-sub">あのシーンの場所を登録しよう</div>
   </div>
 </div>
 
-<!-- STEP INDICATOR -->
+<!-- STEPS -->
 
 <div class="steps">
-  <div class="step">
-    <div class="step-circle active" id="step1c">1</div>
-    <div class="step-label active" id="step1l">URL入力</div>
-  </div>
-  <div class="step-line"></div>
-  <div class="step">
-    <div class="step-circle" id="step2c">2</div>
-    <div class="step-label" id="step2l">AI解析</div>
-  </div>
-  <div class="step-line"></div>
-  <div class="step">
-    <div class="step-circle" id="step3c">3</div>
-    <div class="step-label" id="step3l">確認・登録</div>
-  </div>
+  <div class="step"><div class="sc active" id="s1c">1</div><div class="sl active" id="s1l">URL入力</div></div>
+  <div class="sline"></div>
+  <div class="step"><div class="sc" id="s2c">2</div><div class="sl" id="s2l">AI解析</div></div>
+  <div class="sline"></div>
+  <div class="step"><div class="sc" id="s3c">3</div><div class="sl" id="s3l">確認・登録</div></div>
 </div>
 
-<!-- STEP 1: URL INPUT -->
+<!-- STEP1 -->
 
-<div class="card" id="cardUrl">
+<div class="card" id="c1">
   <div class="card-title">📎 投稿URLを貼り付け</div>
-  <div class="url-wrap">
-    <input class="url-input" id="urlInput" type="url"
-      placeholder="https://youtube.com/watch?v=... または Instagram / X / TikTok"
-      oninput="onUrlInput(this.value)">
-  </div>
-  <div class="url-type" id="urlTypeBadge"></div>
+  <input class="url-input" id="urlInput" type="url"
+    placeholder="YouTube / Instagram / X / TikTok のURL">
+  <div class="url-badge" id="urlBadge"></div>
   <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()">
-    <span>🤖</span><span>AIで解析する</span>
+    🤖 AIで解析する
   </button>
 </div>
 
-<!-- STEP 2: ANALYZING -->
+<!-- STEP2 -->
 
-<div class="card" id="cardAnalyzing" style="display:none">
+<div class="card" id="c2" style="display:none">
   <div class="analyzing show">
     <div class="spin"></div>
-    <div class="analyzing-text" id="analyzingText">AIが解析しています...</div>
-    <div class="analyzing-step" id="analyzingStep">URLを確認中</div>
+    <div class="at" id="at">AIが解析しています...</div>
+    <div class="as" id="as">URLを確認中</div>
   </div>
 </div>
 
-<!-- STEP 3: RESULT FORM -->
+<!-- STEP3 -->
 
-<div id="cardResult" style="display:none">
+<div id="c3" style="display:none">
   <div class="card">
-    <div class="card-title">🎬 作品・シーン情報 <span class="ai-badge">✨ AI入力済み</span></div>
-    <div class="result-form show">
-      <div class="field">
-        <div class="field-label">作品名 <span class="req">*</span></div>
-        <input class="field-input" id="fieldWork" type="text" placeholder="例：君の名は。">
-      </div>
-      <div class="field">
-        <div class="field-label">スポット名 <span class="req">*</span></div>
-        <input class="field-input" id="fieldTitle" type="text" placeholder="例：須賀神社 階段">
-      </div>
-      <div class="field">
-        <div class="field-label">エピソード・シーン</div>
-        <input class="field-input" id="fieldEp" type="text" placeholder="例：エンディング / 第3話">
-      </div>
-      <div class="field">
-        <div class="field-label">絵文字</div>
-        <input class="field-input" id="fieldEmoji" type="text" placeholder="例：⛩️" style="width:80px">
-      </div>
+    <div class="card-title">🎬 作品・シーン情報</div>
+    <div class="field">
+      <div class="fl">作品名 *</div>
+      <input class="fi" id="fWork" type="text" placeholder="例：君の名は。">
+    </div>
+    <div class="field">
+      <div class="fl">スポット名 *</div>
+      <input class="fi" id="fTitle" type="text" placeholder="例：須賀神社 階段">
+    </div>
+    <div class="field">
+      <div class="fl">エピソード</div>
+      <input class="fi" id="fEp" type="text" placeholder="例：エンディング">
+    </div>
+    <div class="field">
+      <div class="fl">絵文字</div>
+      <input class="fi" id="fEmoji" type="text" placeholder="⛩️" style="width:70px">
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">📍 場所情報 <span class="ai-badge">✨ AI入力済み</span></div>
-    <div class="field">
-      <div class="field-label">住所・場所名 <span class="req">*</span></div>
-      <input class="field-input" id="fieldLocation" type="text"
-        placeholder="例：東京都新宿区須賀町" oninput="onLocationInput(this.value)">
-      <div class="field-hint">入力すると自動で座標を取得します</div>
-    </div>
+    <div class="card-title">📍 場所情報</div>
 
 ```
-<!-- AI候補 -->
-<div id="candidatesContainer" style="display:none;margin-bottom:14px;"></div>
-
-<!-- Map Preview -->
-<div class="map-preview" id="mapPreview">
-  <div class="map-preview-placeholder" id="mapPlaceholder">
-    <div class="icon">🗾</div>
-    <div class="text">住所を入力すると地図が表示されます</div>
-  </div>
+<!-- 候補 -->
+<div class="candidates" id="candidatesBox" style="display:none">
+  <div class="cand-label">📍 AIが推定した場所候補（タップで選択）</div>
+  <div id="candidatesList"></div>
 </div>
 
-<div class="coords-row">
+<div class="field">
+  <div class="fl">住所・場所名 *</div>
+  <input class="fi" id="fLocation" type="text"
+    placeholder="例：東京都新宿区須賀町" oninput="onLocationInput(this.value)">
+  <div class="fh">入力すると自動で座標を取得します</div>
+</div>
+
+<div class="map-prev" id="mapPrev">
+  <span style="font-size:32px">🗾</span>
+  <span>住所を入力すると地図が表示されます</span>
+</div>
+
+<div class="crow">
   <div class="field" style="margin-bottom:0">
-    <div class="field-label">緯度</div>
-    <input class="field-input" id="fieldLat" type="number" step="0.0001" placeholder="35.6844">
+    <div class="fl">緯度</div>
+    <input class="fi" id="fLat" type="number" step="0.0001" placeholder="35.6844">
   </div>
   <div class="field" style="margin-bottom:0">
-    <div class="field-label">経度</div>
-    <input class="field-input" id="fieldLng" type="number" step="0.0001" placeholder="139.7195">
+    <div class="fl">経度</div>
+    <input class="fi" id="fLng" type="number" step="0.0001" placeholder="139.7195">
   </div>
 </div>
 ```
@@ -282,15 +244,15 @@ font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-spac
 
 <!-- SUCCESS -->
 
-<div class="card" id="cardSuccess" style="display:none">
-  <div class="success-screen show">
-    <div class="success-icon">🎉</div>
-    <div class="success-title">登録完了！</div>
-    <div class="success-sub">聖地マップに追加されました。<br>みんなが巡礼できるようになりました！</div>
-    <div class="success-spot" id="successSpot"></div>
-    <div class="success-btns">
-      <button class="s-btn primary" onclick="location.href='/'">地図で見る</button>
-      <button class="s-btn secondary" onclick="resetForm()">続けて登録</button>
+<div class="card" id="c4" style="display:none">
+  <div class="success show">
+    <div class="sicon">🎉</div>
+    <div class="stitle">登録完了！</div>
+    <div class="ssub">聖地マップに追加されました。<br>みんなが巡礼できます！</div>
+    <div class="sspot" id="sspot"></div>
+    <div class="sbtns">
+      <button class="sbtn p" onclick="location.href='/'">地図で見る</button>
+      <button class="sbtn s" onclick="reset()">続けて登録</button>
     </div>
   </div>
 </div>
@@ -300,317 +262,186 @@ font-size:12px;font-weight:700;transition:transform .25s;z-index:1000;white-spac
 <script>
 const SUPABASE_URL = 'https://zzpfnszijxkfxtietilr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cGZuc3ppanhrZnh0aWV0aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTI2MzMsImV4cCI6MjA5MDU4ODYzM30.gqVLopJ3kveG1YwAcF6LQ7GFS2tZ0VRlHAG7M4je2Z0';
+const AI_PROVIDER = 'gemini'; // 切り替えはここだけ
 
-// URL判定
-function detectUrlType(url) {
-  if (!url) return null;
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-  if (url.includes('instagram.com')) return 'instagram';
-  if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
-  if (url.includes('tiktok.com')) return 'tiktok';
-  if (url.startsWith('http')) return 'other';
-  return null;
-}
-
-const typeLabels = {
-  youtube: '▶ YouTube',
-  instagram: '📸 Instagram',
-  twitter: '𝕏 X (Twitter)',
-  tiktok: '🎵 TikTok',
-  other: '🔗 その他URL'
-};
-
-function onUrlInput(val) {
-  const type = detectUrlType(val.trim());
-  const badge = document.getElementById('urlTypeBadge');
-  if (type) {
-    badge.textContent = typeLabels[type];
-    badge.className = 'url-type show ' + type;
-  } else if (val.trim().length > 0) {
+// ── URL入力 ──
+document.getElementById('urlInput').addEventListener('input', function() {
+  const val = this.value.trim();
+  const badge = document.getElementById('urlBadge');
+  if (val.includes('youtube.com') || val.includes('youtu.be')) {
+    badge.textContent = '▶ YouTube';
+    badge.className = 'url-badge show youtube';
+  } else if (val.length > 0) {
     badge.textContent = '🔗 URL';
-    badge.className = 'url-type show other';
+    badge.className = 'url-badge show other';
   } else {
-    badge.className = 'url-type';
+    badge.className = 'url-badge';
   }
-}
+});
 
-// ステップ更新
 function setStep(n) {
   for (let i = 1; i <= 3; i++) {
-    const c = document.getElementById('step'+i+'c');
-    const l = document.getElementById('step'+i+'l');
-    if (i < n) { c.className='step-circle done'; c.textContent='✓'; l.className='step-label'; }
-    else if (i === n) { c.className='step-circle active'; l.className='step-label active'; }
-    else { c.className='step-circle'; l.className='step-label'; }
+    const c = document.getElementById('s'+i+'c');
+    const l = document.getElementById('s'+i+'l');
+    if (i < n) { c.className='sc done'; c.textContent='✓'; l.className='sl'; }
+    else if (i === n) { c.className='sc active'; l.className='sl active'; }
+    else { c.className='sc'; l.className='sl'; }
   }
 }
 
-// 解析ステップメッセージ
-const analyzeSteps = [
-  ['URLを確認中...', 'プラットフォームを判定しています'],
-  ['タイトルを取得中...', '動画・投稿の情報を読み込んでいます'],
-  ['作品名を特定中...', 'アニメ・マンガのタイトルを検索しています'],
-  ['場所を推定中...', '聖地の住所を特定しています'],
-  ['情報を整理中...', 'スポット情報をまとめています'],
+const steps = [
+  ['URLを確認中...','プラットフォームを判定しています'],
+  ['タイトルを取得中...','動画情報を読み込んでいます'],
+  ['作品名を特定中...','アニメ・マンガタイトルを検索しています'],
+  ['場所を推定中...','聖地の住所を特定しています'],
+  ['情報を整理中...','スポット情報をまとめています'],
 ];
 
+// ── 解析開始 ──
 async function startAnalyze() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) { showToast('URLを入力してください'); return; }
 
-  // UI切り替え
-  document.getElementById('cardUrl').style.display = 'none';
-  document.getElementById('cardAnalyzing').style.display = 'block';
+  document.getElementById('c1').style.display = 'none';
+  document.getElementById('c2').style.display = 'block';
   setStep(2);
 
-  // ステップアニメーション
-  let stepIdx = 0;
-  const stepTimer = setInterval(() => {
-    if (stepIdx < analyzeSteps.length) {
-      document.getElementById('analyzingText').textContent = analyzeSteps[stepIdx][0];
-      document.getElementById('analyzingStep').textContent = analyzeSteps[stepIdx][1];
-      stepIdx++;
+  let idx = 0;
+  const timer = setInterval(() => {
+    if (idx < steps.length) {
+      document.getElementById('at').textContent = steps[idx][0];
+      document.getElementById('as').textContent = steps[idx][1];
+      idx++;
     }
-  }, 800);
+  }, 900);
 
   try {
-    // Claude APIで解析
-    const result = await analyzeWithAI(url);
-    clearInterval(stepTimer);
+    const result = await analyze(url);
+    clearInterval(timer);
 
-    // フォームに反映
-    document.getElementById('fieldWork').value = result.work || '';
-    document.getElementById('fieldTitle').value = result.title || '';
-    document.getElementById('fieldEp').value = result.ep || '';
-    document.getElementById('fieldEmoji').value = result.emoji || '📍';
-    document.getElementById('fieldLocation').value = result.location || '';
+    document.getElementById('fWork').value = result.work || '';
+    document.getElementById('fTitle').value = result.title || '';
+    document.getElementById('fEp').value = result.ep || '';
+    document.getElementById('fEmoji').value = result.emoji || '📍';
+    document.getElementById('fLocation').value = result.location || '';
 
-    // 場所候補を表示
     if (result.candidates && result.candidates.length > 0) {
       showCandidates(result.candidates);
     }
+    if (result.location) geocode(result.location);
 
-    // 住所から座標取得
-    if (result.location) await geocode(result.location);
-
-    // UI切り替え
-    document.getElementById('cardAnalyzing').style.display = 'none';
-    document.getElementById('cardResult').style.display = 'block';
+    document.getElementById('c2').style.display = 'none';
+    document.getElementById('c3').style.display = 'block';
     setStep(3);
 
   } catch(e) {
-    clearInterval(stepTimer);
-    console.error(e);
-    // エラーでも入力フォームを表示
-    document.getElementById('cardAnalyzing').style.display = 'none';
-    document.getElementById('cardResult').style.display = 'block';
+    clearInterval(timer);
+    console.error('analyze error:', e);
+    document.getElementById('c2').style.display = 'none';
+    document.getElementById('c3').style.display = 'block';
     setStep(3);
-    showToast('AI解析に失敗しました。手動で入力してください。');
+    showToast('AI解析失敗。手動で入力してください。');
   }
 }
 
-// AI解析（Vercel関数経由 → Gemini API）
-// プロバイダーを切り替えるだけで別AIに移行可能
-const AI_PROVIDER = 'gemini'; // 'gemini' | 'claude' | 'huggingface'
-
-async function analyzeWithAI(url) {
-  const type = detectUrlType(url);
-
-  // URLからサムネイル画像URLを取得
-  const imageUrl = await getImageFromUrl(url, type);
-
-  const prompt = `あなたはアニメ・マンガの聖地巡礼の専門家です。
-この画像はアニメ・マンガの聖地巡礼に関する投稿の画像です。
-
-以下の情報をJSON形式で返してください。不明な場合はnullを返してください。
-
-返すJSONのキー:
-- work: アニメ・マンガの作品名（日本語）
-- title: 聖地スポット名（例：須賀神社 階段）
-- location: 住所または場所名（例：東京都新宿区須賀町）
-- ep: エピソード・シーン情報（例：第3話、エンディング）
-- emoji: この場所を表す絵文字1文字
-- confidence: 場所特定の確信度（0-100の数値）
-- candidates: 場所の候補リスト（最大3件、[{name, location, confidence}]形式）
-
-JSONのみ返してください。説明不要。マークダウン不要。`;
-
-  if (AI_PROVIDER === 'gemini') {
-    return await analyzeWithGemini(imageUrl, prompt, url, type);
+// ── AI解析（プロバイダー抽象化） ──
+async function analyze(url) {
+  // YouTubeサムネイル取得
+  let imageUrl = null;
+  const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
+  if (ytMatch) {
+    imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
   }
-  // 将来: 'claude' | 'huggingface' に切り替え可能
-}
 
-// サムネイル取得
-async function getImageFromUrl(url, type) {
-  if (type === 'youtube') {
-    // YouTube動画IDを抽出してサムネイルURL生成
-    const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
-?#]+)/);
-    if (match) {
-      return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
-    }
-  }
-  // Instagram/TikTok/Xはサムネイル取得が困難なのでURLテキスト解析にフォールバック
-  return null;
-}
-
-// Gemini API（Vercel関数経由）
-async function analyzeWithGemini(imageUrl, prompt, originalUrl, type) {
-  if (!imageUrl) {
-    // 画像なし → テキストのみで解析
-    return await analyzeTextOnly(originalUrl, type);
-  }
+  const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。キー: work(作品名), title(スポット名), location(住所), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name,location,confidence}]最大3件)。JSONのみ。説明不要。';
 
   const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageUrl, prompt })
+    body: JSON.stringify({ imageUrl, prompt, url })
   });
 
-  if (!res.ok) {
-    // 画像解析失敗 → テキストのみにフォールバック
-    return await analyzeTextOnly(originalUrl, type);
-  }
-
+  if (!res.ok) throw new Error('API ' + res.status);
   return await res.json();
 }
 
-// テキストのみ解析（画像取得できない場合のフォールバック）
-async function analyzeTextOnly(url, type) {
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      imageUrl: null,
-      prompt: `以下のURLはアニメ・マンガの聖地巡礼に関する投稿です。
-URLの文字列から推測できる情報をJSON形式で返してください。
-
-URL: ${url}
-プラットフォーム: ${type}
-
-返すJSONのキー:
-- work: 作品名（日本語、不明ならnull）
-- title: スポット名（不明ならnull）
-- location: 場所名（不明ならnull）
-- ep: エピソード（不明ならnull）
-- emoji: 絵文字（推測できなければ📍）
-- confidence: 確信度（0-100）
-- candidates: []
-
-JSONのみ返してください。`
-    })
-  });
-  if (!res.ok) throw new Error('解析に失敗しました');
-  return await res.json();
+// ── 候補表示 ──
+function showCandidates(candidates) {
+  const box = document.getElementById('candidatesBox');
+  const list = document.getElementById('candidatesList');
+  box.style.display = 'block';
+  list.innerHTML = candidates.map((c, i) =>
+    '<div class="cand-item" id="ci'+i+'" onclick="pickCandidate(\''+encodeURIComponent(c.location||c.name)+'\','+i+')">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<div class="cand-name">' + (c.name||c.location) + '</div>' +
+    '<div class="cand-conf">確信度 ' + (c.confidence||'?') + '%</div>' +
+    '</div>' +
+    '<div class="cand-loc">📍 ' + (c.location||'—') + '</div>' +
+    '</div>'
+  ).join('');
 }
 
-// 住所→座標（Nominatim / 無料）
-let geocodeTimer = null;
+function pickCandidate(loc, idx) {
+  document.querySelectorAll('.cand-item').forEach(el => el.classList.remove('selected'));
+  document.getElementById('ci'+idx).classList.add('selected');
+  const location = decodeURIComponent(loc);
+  document.getElementById('fLocation').value = location;
+  geocode(location);
+}
+
+// ── 住所→座標 ──
+let gTimer = null;
 function onLocationInput(val) {
-  clearTimeout(geocodeTimer);
-  if (val.length < 4) return;
-  geocodeTimer = setTimeout(() => geocode(val), 800);
+  clearTimeout(gTimer);
+  if (val.length > 3) gTimer = setTimeout(() => geocode(val), 800);
 }
 
 async function geocode(address) {
   try {
     const res = await fetch(
-      'https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(address)+'&limit=1&accept-language=ja',
+      'https://nominatim.openstreetmap.org/search?format=json&q=' +
+      encodeURIComponent(address) + '&limit=1&accept-language=ja',
       { headers: { 'User-Agent': 'AniFrame/1.0' } }
     );
     const data = await res.json();
     if (data && data[0]) {
       const lat = parseFloat(data[0].lat).toFixed(6);
       const lng = parseFloat(data[0].lon).toFixed(6);
-      document.getElementById('fieldLat').value = lat;
-      document.getElementById('fieldLng').value = lng;
-      showMapPreview(lat, lng, address);
+      document.getElementById('fLat').value = lat;
+      document.getElementById('fLng').value = lng;
+      document.getElementById('mapPrev').innerHTML =
+        '<div style="font-size:32px">📍</div>' +
+        '<div style="font-size:12px;font-weight:700">' + address + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + lat + ', ' + lng + '</div>' +
+        '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
     }
-  } catch(e) {
-    console.error('geocode error:', e);
-  }
+  } catch(e) { console.error('geocode:', e); }
 }
 
-function showMapPreview(lat, lng, address) {
-  const preview = document.getElementById('mapPreview');
-  const emoji = document.getElementById('fieldEmoji').value || '📍';
-  preview.innerHTML = `
-    <img src="https://static-maps.yandex.ru/1.x/?lang=ja_JP&ll=${lng},${lat}&z=15&l=map&size=600,200&pt=${lng},${lat},pm2rdl"
-      style="width:100%;height:100%;object-fit:cover;border-radius:10px;"
-      onerror="this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:8px;color:var(--sky-dark)\'><div style=\'font-size:32px\'>📍</div><div style=\'font-size:12px\'>${address}</div><div style=\'font-size:11px;color:var(--muted)\'>座標: ${lat}, ${lng}</div></div>'">
-    <div class="location-found">
-      <span>📍</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${address}</span>
-      <span style="color:var(--success);font-weight:700">✓</span>
-    </div>
-  `;
-}
-
-// 場所候補を表示
-function showCandidates(candidates) {
-  const container = document.getElementById('candidatesContainer');
-  if (!container) return;
-  container.style.display = 'block';
-  container.innerHTML = `
-    <div style="font-size:11px;color:var(--sky-dark);margin-bottom:10px;letter-spacing:.06em;">
-      📍 AI が推定した場所候補
-    </div>
-    ${candidates.map((c, i) => `
-      <div onclick="selectCandidate('${c.location||c.name}', ${i})"
-        style="padding:10px 14px;border-radius:8px;border:1px solid var(--gb);
-        background:var(--sky);margin-bottom:8px;cursor:pointer;transition:all .2s;"
-        id="candidate-${i}">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:13px;font-weight:700;">${c.name||c.location}</div>
-          <div style="font-size:10px;color:var(--sky-dark);background:var(--white);
-            padding:2px 8px;border-radius:10px;border:1px solid var(--gb);">
-            確信度 ${c.confidence||'?'}%
-          </div>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px;">📍 ${c.location||'—'}</div>
-      </div>
-    `).join('')}
-  `;
-}
-
-function selectCandidate(location, idx) {
-  document.querySelectorAll('[id^="candidate-"]').forEach(el => {
-    el.style.background = 'var(--sky)';
-    el.style.borderColor = 'var(--gb)';
-  });
-  const el = document.getElementById('candidate-'+idx);
-  if (el) {
-    el.style.background = 'var(--sky2)';
-    el.style.borderColor = 'var(--sky-dark)';
-  }
-  document.getElementById('fieldLocation').value = location;
-  geocode(location);
-}
-
-// Supabaseに保存
+// ── 登録 ──
 async function submitSpot() {
-  const work = document.getElementById('fieldWork').value.trim();
-  const title = document.getElementById('fieldTitle').value.trim();
-  const location = document.getElementById('fieldLocation').value.trim();
-  const lat = parseFloat(document.getElementById('fieldLat').value);
-  const lng = parseFloat(document.getElementById('fieldLng').value);
+  const work = document.getElementById('fWork').value.trim();
+  const title = document.getElementById('fTitle').value.trim();
+  const location = document.getElementById('fLocation').value.trim();
+  const lat = parseFloat(document.getElementById('fLat').value);
+  const lng = parseFloat(document.getElementById('fLng').value);
 
   if (!work || !title) { showToast('作品名とスポット名は必須です'); return; }
-  if (!lat || !lng) { showToast('座標が取得できていません。住所を確認してください'); return; }
+  if (!lat || !lng) { showToast('住所を入力して座標を取得してください'); return; }
 
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '登録中...';
+  btn.disabled = true; btn.textContent = '登録中...';
+
+  const tag = work.includes('君の名')||work.includes('新海') ? 'kimi'
+    : work.includes('スラム')||work.includes('SLAM') ? 'slam'
+    : work.includes('天気') ? 'tenki' : 'other';
 
   const spot = {
-    title, work,
-    tag: detectTag(work),
-    emoji: document.getElementById('fieldEmoji').value || '📍',
-    lat, lng, location,
-    ep: document.getElementById('fieldEp').value.trim() || null,
-    count: 0,
-    diff: '★☆☆'
+    title, work, tag, lat, lng, location,
+    emoji: document.getElementById('fEmoji').value || '📍',
+    ep: document.getElementById('fEp').value.trim() || null,
+    count: 0, diff: '★☆☆',
+    status: 'unconfirmed', confidence: 0
   };
 
   try {
@@ -624,41 +455,27 @@ async function submitSpot() {
       },
       body: JSON.stringify(spot)
     });
-
     if (!res.ok) throw new Error('保存失敗 ' + res.status);
 
-    // 成功
-    document.getElementById('cardResult').style.display = 'none';
-    document.getElementById('cardSuccess').style.display = 'block';
-    document.getElementById('successSpot').innerHTML =
-      '<div class="success-spot-name">' + spot.emoji + ' ' + spot.title + '</div>' +
-      '<div class="success-spot-work">' + spot.work + ' · 📍 ' + spot.location + '</div>';
-    setStep(3);
-    document.getElementById('step3c').className = 'step-circle done';
-    document.getElementById('step3c').textContent = '✓';
+    document.getElementById('c3').style.display = 'none';
+    document.getElementById('c4').style.display = 'block';
+    document.getElementById('sspot').innerHTML =
+      '<div class="sspot-name">' + spot.emoji + ' ' + spot.title + '</div>' +
+      '<div class="sspot-work">' + spot.work + ' · 📍 ' + spot.location + '</div>';
+    document.getElementById('s3c').className = 'sc done';
+    document.getElementById('s3c').textContent = '✓';
 
   } catch(e) {
-    console.error(e);
-    showToast('登録に失敗しました: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '地図に登録する 📍';
+    showToast('登録失敗: ' + e.message);
+    btn.disabled = false; btn.textContent = '地図に登録する 📍';
   }
 }
 
-// 作品名からタグを自動判定
-function detectTag(work) {
-  if (work.includes('君の名') || work.includes('天気の子') || work.includes('新海')) return 'kimi';
-  if (work.includes('スラム') || work.includes('SLAM')) return 'slam';
-  if (work.includes('天気')) return 'tenki';
-  return 'other';
-}
-
-function resetForm() {
+function reset() {
   document.getElementById('urlInput').value = '';
-  document.getElementById('urlTypeBadge').className = 'url-type';
-  document.getElementById('analyzeBtn').disabled = true;
-  document.getElementById('cardSuccess').style.display = 'none';
-  document.getElementById('cardUrl').style.display = 'block';
+  document.getElementById('urlBadge').className = 'url-badge';
+  document.getElementById('c4').style.display = 'none';
+  document.getElementById('c1').style.display = 'block';
   setStep(1);
 }
 
