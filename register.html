@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>アニしゃ — スポット登録</title>
+<title>アニしゃ — スポット登録・編集</title>
 <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -12,12 +12,12 @@
   --sky:#e8f4fd; --sky2:#d0eaf8; --sky3:#b8dff5;
   --sky-dark:#4a9cc7; --accent:#1a7fc1; --muted:#666;
   --glass:rgba(232,244,253,0.96); --gb:rgba(74,156,199,0.35);
-  --success:#22c55e; --error:#ef4444;
+  --success:#22c55e; --error:#ef4444; --warn:#f59e0b;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 body{background:var(--sky);min-height:100vh;font-family:'Yomogi',cursive;padding:20px 16px 60px;}
 
-.header{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
 .back{width:36px;height:36px;border-radius:8px;border:1px solid var(–gb);
 background:var(–white);display:flex;align-items:center;justify-content:center;
 font-size:18px;cursor:pointer;color:var(–muted);text-decoration:none;line-height:1;}
@@ -25,41 +25,82 @@ font-size:18px;cursor:pointer;color:var(–muted);text-decoration:none;line-heig
 .page-sub{font-size:11px;color:var(–sky-dark);margin-top:2px;}
 
 /* STEPS */
-.steps{display:flex;align-items:center;margin-bottom:28px;}
-.step{display:flex;align-items:center;gap:6px;}
+.steps{display:flex;align-items:center;margin-bottom:24px;}
 .sc{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
 justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;
 border:2px solid var(–border);background:var(–white);color:var(–muted);}
 .sc.active{border-color:var(–accent);background:var(–accent);color:var(–white);}
 .sc.done{border-color:var(–success);background:var(–success);color:var(–white);}
-.sl{font-size:11px;color:var(–muted);}
+.sl{font-size:11px;color:var(–muted);margin-left:6px;}
 .sl.active{color:var(–accent);font-weight:700;}
-.sline{flex:1;height:1px;background:var(–border);margin:0 6px;}
+.sline{flex:1;height:1px;background:var(–border);margin:0 8px;}
 
 /* CARD */
 .card{background:var(–white);border-radius:14px;border:1px solid var(–gb);
 padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(74,156,199,0.08);}
-.card-title{font-size:13px;color:var(–sky-dark);margin-bottom:12px;letter-spacing:.04em;}
+.card-title{font-size:13px;color:var(–sky-dark);margin-bottom:14px;
+letter-spacing:.04em;display:flex;align-items:center;gap:8px;}
+
+/* STATUS BADGE */
+.status-badge{display:inline-flex;align-items:center;gap:5px;
+padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+.status-badge.unconfirmed{background:#fff3e0;color:#e65100;border:1px solid #ffcc02;}
+.status-badge.discussing{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
+.status-badge.confirmed{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;}
+.status-badge.official{background:#fff8e1;color:#f57f17;border:1px solid #ffe082;}
 
 /* INPUT */
+.fi{width:100%;height:42px;padding:0 12px;
+background:var(–sky);border:1.5px solid var(–gb);border-radius:8px;
+color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;
+transition:all .2s;}
+.fi:focus{background:var(–white);border-color:var(–sky-dark);}
+.fi::placeholder{color:#aac4d8;}
+.fi.edited{border-color:var(–warn);background:#fffbeb;}
+.field{margin-bottom:12px;}
+.fl{font-size:11px;color:var(–sky-dark);margin-bottom:5px;
+display:flex;align-items:center;gap:6px;}
+.fl .req{color:var(–error);font-size:10px;}
+.fl .ai-tag{font-size:9px;color:var(–accent);background:var(–sky);
+border:1px solid var(–gb);padding:1px 7px;border-radius:8px;}
+.fl .edited-tag{font-size:9px;color:var(–warn);background:#fffbeb;
+border:1px solid #fcd34d;padding:1px 7px;border-radius:8px;}
+.fh{font-size:10px;color:var(–muted);margin-top:3px;}
+.crow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* URL INPUT */
 .url-input{width:100%;height:46px;padding:0 14px;
 background:var(–sky);border:1.5px solid var(–gb);border-radius:10px;
 color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;
 transition:all .2s;margin-bottom:10px;}
 .url-input:focus{background:var(–white);border-color:var(–sky-dark);}
 .url-input::placeholder{color:#aac4d8;}
-
-.url-badge{display:inline-block;padding:3px 10px;border-radius:12px;
-font-size:11px;font-weight:700;margin-bottom:10px;display:none;}
+.url-badge{display:none;padding:3px 10px;border-radius:12px;
+font-size:11px;font-weight:700;margin-bottom:10px;}
 .url-badge.show{display:inline-block;}
 .url-badge.youtube{background:#ffe4e4;color:#cc0000;}
 .url-badge.other{background:var(–sky2);color:var(–sky-dark);}
 
+/* BUTTONS */
+.btn{height:44px;padding:0 20px;border-radius:10px;font-family:‘Yomogi’,cursive;
+font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
+.btn:active{transform:scale(0.97);}
+.btn.primary{background:var(–accent);color:var(–white);}
+.btn.primary:hover{background:#1568a0;}
+.btn.success{background:var(–success);color:var(–white);}
+.btn.warn{background:var(–warn);color:var(–white);}
+.btn.outline{background:var(–white);border:1.5px solid var(–gb);color:var(–black);}
+.btn.outline:hover{border-color:var(–sky-dark);}
+.btn.danger{background:#fee2e2;color:var(–error);border:1px solid #fecaca;}
+.btn.full{width:100%;}
+.btn:disabled{background:var(–border);color:var(–muted);cursor:not-allowed;}
+.btn-row{display:flex;gap:10px;}
+
+/* ANALYZE */
 .analyze-btn{width:100%;height:46px;border-radius:10px;
 background:var(–accent);border:none;color:var(–white);
 font-family:‘Yomogi’,cursive;font-size:14px;font-weight:700;
 cursor:pointer;transition:all .2s;}
-.analyze-btn:hover{background:#1568a0;}
 .analyze-btn:active{transform:scale(0.98);}
 
 /* ANALYZING */
@@ -69,62 +110,93 @@ cursor:pointer;transition:all .2s;}
 border:3px solid var(–sky3);border-top-color:var(–accent);
 animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.at{font-size:13px;color:var(–sky-dark);}
-.as{font-size:11px;color:var(–muted);}
-
-/* FORM */
-.field{margin-bottom:12px;}
-.fl{font-size:11px;color:var(–sky-dark);margin-bottom:5px;letter-spacing:.04em;}
-.fi{width:100%;height:40px;padding:0 12px;
-background:var(–sky);border:1.5px solid var(–gb);border-radius:8px;
-color:var(–black);font-family:‘Yomogi’,cursive;font-size:13px;outline:none;}
-.fi:focus{background:var(–white);border-color:var(–sky-dark);}
-.fh{font-size:10px;color:var(–muted);margin-top:3px;}
-.crow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-
-/* MAP PREVIEW */
-.map-prev{width:100%;height:180px;border-radius:10px;
-background:var(–sky2);border:1px solid var(–gb);
-display:flex;align-items:center;justify-content:center;
-margin-bottom:12px;font-size:13px;color:var(–sky-dark);text-align:center;
-flex-direction:column;gap:8px;}
 
 /* CANDIDATES */
-.candidates{margin-bottom:12px;}
-.cand-label{font-size:11px;color:var(–sky-dark);margin-bottom:8px;}
-.cand-item{padding:10px 14px;border-radius:8px;border:1px solid var(–gb);
-background:var(–sky);margin-bottom:6px;cursor:pointer;transition:all .2s;}
-.cand-item:hover,.cand-item.selected{background:var(–sky2);border-color:var(–sky-dark);}
+.cand-box{background:var(–sky);border-radius:10px;border:1px solid var(–gb);
+padding:12px;margin-bottom:12px;}
+.cand-label{font-size:11px;color:var(–sky-dark);margin-bottom:8px;font-weight:700;}
+.cand-item{padding:10px 14px;border-radius:8px;border:2px solid transparent;
+background:var(–white);margin-bottom:6px;cursor:pointer;transition:all .2s;}
+.cand-item:last-child{margin-bottom:0;}
+.cand-item:hover{border-color:var(–sky-dark);}
+.cand-item.selected{border-color:var(–accent);background:#eff8ff;}
+.cand-top{display:flex;justify-content:space-between;align-items:center;}
 .cand-name{font-size:13px;font-weight:700;}
-.cand-loc{font-size:10px;color:var(–muted);margin-top:2px;}
-.cand-conf{font-size:10px;color:var(–sky-dark);}
+.cand-conf{font-size:10px;color:var(–sky-dark);background:var(–sky);
+padding:2px 8px;border-radius:8px;}
+.cand-loc{font-size:10px;color:var(–muted);margin-top:3px;}
 
-/* SUBMIT */
-.submit-btn{width:100%;height:48px;border-radius:12px;
-background:linear-gradient(135deg,var(–accent),#1568a0);
-border:none;color:var(–white);font-family:‘Yomogi’,cursive;
-font-size:15px;font-weight:700;cursor:pointer;
-box-shadow:0 4px 14px rgba(26,127,193,0.3);transition:all .2s;}
-.submit-btn:hover{transform:translateY(-1px);}
-.submit-btn:active{transform:scale(0.98);}
-.submit-btn:disabled{background:var(–border);color:var(–muted);box-shadow:none;cursor:not-allowed;}
+/* MAP PREVIEW */
+.map-prev{width:100%;height:160px;border-radius:10px;
+background:var(–sky2);border:1px solid var(–gb);
+display:flex;align-items:center;justify-content:center;
+margin-bottom:12px;flex-direction:column;gap:8px;
+font-size:13px;color:var(–sky-dark);text-align:center;}
+
+/* DISCUSSION */
+.disc-item{display:flex;align-items:center;gap:10px;
+padding:10px 12px;background:var(–sky);border-radius:8px;
+border:1px solid var(–gb);margin-bottom:8px;}
+.disc-url{flex:1;font-size:11px;color:var(–sky-dark);
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.disc-del{width:28px;height:28px;border-radius:6px;border:none;
+background:#fee2e2;color:var(–error);cursor:pointer;font-size:14px;
+display:flex;align-items:center;justify-content:center;}
+
+/* STATUS FLOW */
+.status-flow{display:flex;align-items:center;gap:6px;margin-bottom:16px;
+overflow-x:auto;padding-bottom:4px;}
+.sf-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+.sf-circle{width:32px;height:32px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;font-size:14px;
+border:2px solid var(–border);background:var(–white);}
+.sf-circle.current{border-color:var(–accent);background:var(–accent);
+box-shadow:0 0 0 4px rgba(26,127,193,0.15);}
+.sf-circle.done{border-color:var(–success);background:var(–success);}
+.sf-label{font-size:9px;color:var(–muted);text-align:center;}
+.sf-label.current{color:var(–accent);font-weight:700;}
+.sf-line{width:24px;height:2px;background:var(–border);margin-top:-20px;}
+.sf-line.done{background:var(–success);}
 
 /* SUCCESS */
-.success{display:none;flex-direction:column;align-items:center;
+.success-view{display:none;flex-direction:column;align-items:center;
 gap:14px;padding:28px 16px;text-align:center;}
-.success.show{display:flex;}
-.sicon{font-size:52px;}
-.stitle{font-size:22px;color:var(–black);}
-.ssub{font-size:12px;color:var(–muted);line-height:1.8;}
-.sspot{background:var(–sky);border:1px solid var(–gb);
+.success-view.show{display:flex;}
+.s-icon{font-size:52px;}
+.s-title{font-size:22px;color:var(–black);}
+.s-sub{font-size:12px;color:var(–muted);line-height:1.8;}
+.s-spot{background:var(–sky);border:1px solid var(–gb);
 border-radius:10px;padding:12px 16px;width:100%;text-align:left;}
-.sspot-name{font-size:15px;font-weight:700;margin-bottom:3px;}
-.sspot-work{font-size:11px;color:var(–accent);}
-.sbtns{display:flex;gap:8px;width:100%;}
-.sbtn{flex:1;height:42px;border-radius:10px;font-family:‘Yomogi’,cursive;
+.s-spot-name{font-size:15px;font-weight:700;margin-bottom:3px;}
+.s-spot-work{font-size:11px;color:var(–accent);}
+.s-btns{display:flex;gap:8px;width:100%;}
+.s-btn{flex:1;height:42px;border-radius:10px;font-family:‘Yomogi’,cursive;
 font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
-.sbtn.p{background:var(–accent);color:var(–white);}
-.sbtn.s{background:var(–white);border:1px solid var(–gb);color:var(–black);}
+.s-btn.p{background:var(–accent);color:var(–white);}
+.s-btn.s{background:var(–white);border:1px solid var(–gb);color:var(–black);}
+
+/* EDIT MODE */
+.edit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.edit-title{font-size:16px;font-weight:700;}
+.spot-list{display:flex;flex-direction:column;gap:10px;}
+.spot-edit-item{background:var(–white);border-radius:12px;border:1px solid var(–gb);
+padding:14px;cursor:pointer;transition:all .2s;}
+.spot-edit-item:hover{border-color:var(–sky-dark);}
+.sei-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.sei-emoji{font-size:22px;}
+.sei-info{flex:1;}
+.sei-title{font-size:14px;font-weight:700;}
+.sei-work{font-size:11px;color:var(–accent);margin-top:2px;}
+.sei-bottom{display:flex;align-items:center;justify-content:space-between;}
+.sei-loc{font-size:10px;color:var(–muted);}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:20px;
+background:var(–white);border-radius:10px;border:1px solid var(–gb);overflow:hidden;}
+.tab{flex:1;height:40px;display:flex;align-items:center;justify-content:center;
+font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;
+color:var(–muted);border:none;background:transparent;font-family:‘Yomogi’,cursive;}
+.tab.active{background:var(–accent);color:var(–white);}
 
 /* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;
@@ -141,119 +213,277 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 <div class="header">
   <a class="back" href="/">←</a>
   <div>
-    <div class="page-title">スポット登録</div>
-    <div class="page-sub">あのシーンの場所を登録しよう</div>
+    <div class="page-title" id="pageTitle">スポット登録</div>
+    <div class="page-sub" id="pageSub">あのシーンの場所を登録しよう</div>
   </div>
 </div>
 
-<!-- STEPS -->
+<!-- TABS -->
 
-<div class="steps">
-  <div class="step"><div class="sc active" id="s1c">1</div><div class="sl active" id="s1l">URL入力</div></div>
-  <div class="sline"></div>
-  <div class="step"><div class="sc" id="s2c">2</div><div class="sl" id="s2l">AI解析</div></div>
-  <div class="sline"></div>
-  <div class="step"><div class="sc" id="s3c">3</div><div class="sl" id="s3l">確認・登録</div></div>
+<div class="tabs">
+  <button class="tab active" id="tabRegister" onclick="switchTab('register')">＋ 新規登録</button>
+  <button class="tab" id="tabEdit" onclick="switchTab('edit')">✏️ 編集・修正</button>
 </div>
 
-<!-- STEP1 -->
+<!-- ═══════ 登録タブ ═══════ -->
 
-<div class="card" id="c1">
-  <div class="card-title">📎 投稿URLを貼り付け</div>
-  <input class="url-input" id="urlInput" type="url"
-    placeholder="YouTube / Instagram / X / TikTok のURL">
-  <div class="url-badge" id="urlBadge"></div>
-  <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()">
-    🤖 AIで解析する
-  </button>
-</div>
+<div id="paneRegister">
 
-<!-- STEP2 -->
+  <!-- STEPS -->
 
-<div class="card" id="c2" style="display:none">
-  <div class="analyzing show">
-    <div class="spin"></div>
-    <div class="at" id="at">AIが解析しています...</div>
-    <div class="as" id="as">URLを確認中</div>
+  <div class="steps">
+    <div class="sc active" id="s1c">1</div><div class="sl active" id="s1l">URL入力</div>
+    <div class="sline"></div>
+    <div class="sc" id="s2c">2</div><div class="sl" id="s2l">AI解析</div>
+    <div class="sline"></div>
+    <div class="sc" id="s3c">3</div><div class="sl" id="s3l">確認・修正</div>
+    <div class="sline"></div>
+    <div class="sc" id="s4c">4</div><div class="sl" id="s4l">仮登録</div>
   </div>
-</div>
 
-<!-- STEP3 -->
+  <!-- STEP1: URL -->
 
-<div id="c3" style="display:none">
-  <div class="card">
-    <div class="card-title">🎬 作品・シーン情報</div>
-    <div class="field">
-      <div class="fl">作品名 *</div>
-      <input class="fi" id="fWork" type="text" placeholder="例：君の名は。">
-    </div>
-    <div class="field">
-      <div class="fl">スポット名 *</div>
-      <input class="fi" id="fTitle" type="text" placeholder="例：須賀神社 階段">
-    </div>
-    <div class="field">
-      <div class="fl">エピソード</div>
-      <input class="fi" id="fEp" type="text" placeholder="例：エンディング">
-    </div>
-    <div class="field">
-      <div class="fl">絵文字</div>
-      <input class="fi" id="fEmoji" type="text" placeholder="⛩️" style="width:70px">
+  <div class="card" id="c1">
+    <div class="card-title">📎 投稿URLを貼り付け</div>
+    <input class="url-input" id="urlInput" type="url"
+      placeholder="YouTube / Instagram / X / TikTok のURL">
+    <div class="url-badge" id="urlBadge"></div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()">
+      🤖 AIで解析する
+    </button>
+  </div>
+
+  <!-- STEP2: ANALYZING -->
+
+  <div class="card" id="c2" style="display:none">
+    <div class="analyzing show">
+      <div class="spin"></div>
+      <div style="font-size:13px;color:var(--sky-dark)" id="at">AIが解析中...</div>
+      <div style="font-size:11px;color:var(--muted)" id="as">URLを確認中</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">📍 場所情報</div>
+  <!-- STEP3: 確認・修正 -->
+
+  <div id="c3" style="display:none">
 
 ```
-<!-- 候補 -->
-<div class="candidates" id="candidatesBox" style="display:none">
-  <div class="cand-label">📍 AIが推定した場所候補（タップで選択）</div>
+<div class="card">
+  <div class="card-title">
+    🤖 AI解析結果
+    <span style="font-size:10px;color:var(--muted);font-weight:400">修正可能です</span>
+  </div>
+
+  <!-- 作品名 -->
+  <div class="field">
+    <div class="fl">
+      作品名 <span class="req">*</span>
+      <span class="ai-tag" id="tagWork">AI</span>
+    </div>
+    <input class="fi" id="fWork" type="text" placeholder="例：君の名は。"
+      oninput="markEdited(this,'tagWork')">
+  </div>
+
+  <!-- スポット名 -->
+  <div class="field">
+    <div class="fl">
+      スポット名 <span class="req">*</span>
+      <span class="ai-tag" id="tagTitle">AI</span>
+    </div>
+    <input class="fi" id="fTitle" type="text" placeholder="例：須賀神社 階段"
+      oninput="markEdited(this,'tagTitle')">
+  </div>
+
+  <!-- エピソード -->
+  <div class="field">
+    <div class="fl">
+      エピソード
+      <span class="ai-tag" id="tagEp">AI</span>
+    </div>
+    <input class="fi" id="fEp" type="text" placeholder="例：エンディング"
+      oninput="markEdited(this,'tagEp')">
+  </div>
+
+  <!-- 絵文字 -->
+  <div class="field">
+    <div class="fl">絵文字 <span class="ai-tag" id="tagEmoji">AI</span></div>
+    <input class="fi" id="fEmoji" type="text" placeholder="⛩️" style="width:70px"
+      oninput="markEdited(this,'tagEmoji')">
+  </div>
+</div>
+
+<!-- 場所候補 -->
+<div class="card" id="candidatesCard" style="display:none">
+  <div class="card-title">📍 場所候補（タップで選択）</div>
   <div id="candidatesList"></div>
 </div>
 
-<div class="field">
-  <div class="fl">住所・場所名 *</div>
-  <input class="fi" id="fLocation" type="text"
-    placeholder="例：東京都新宿区須賀町" oninput="onLocationInput(this.value)">
-  <div class="fh">入力すると自動で座標を取得します</div>
-</div>
-
-<div class="map-prev" id="mapPrev">
-  <span style="font-size:32px">🗾</span>
-  <span>住所を入力すると地図が表示されます</span>
-</div>
-
-<div class="crow">
-  <div class="field" style="margin-bottom:0">
-    <div class="fl">緯度</div>
-    <input class="fi" id="fLat" type="number" step="0.0001" placeholder="35.6844">
+<div class="card">
+  <div class="card-title">
+    📍 場所情報
+    <span class="ai-tag" id="tagLocation">AI</span>
   </div>
-  <div class="field" style="margin-bottom:0">
-    <div class="fl">経度</div>
-    <input class="fi" id="fLng" type="number" step="0.0001" placeholder="139.7195">
+
+  <div class="field">
+    <div class="fl">住所・場所名 <span class="req">*</span></div>
+    <input class="fi" id="fLocation" type="text"
+      placeholder="例：東京都新宿区須賀町"
+      oninput="onLocationInput(this.value);markEdited(this,'tagLocation')">
+    <div class="fh">入力すると自動で座標を取得します</div>
+  </div>
+
+  <div class="map-prev" id="mapPrev">
+    <span style="font-size:32px">🗾</span>
+    <span>住所を入力すると地図が表示されます</span>
+  </div>
+
+  <div class="crow">
+    <div class="field" style="margin-bottom:0">
+      <div class="fl">緯度</div>
+      <input class="fi" id="fLat" type="number" step="0.0001" placeholder="35.6844">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="fl">経度</div>
+      <input class="fi" id="fLng" type="number" step="0.0001" placeholder="139.7195">
+    </div>
+  </div>
+</div>
+
+<!-- 議論URL -->
+<div class="card">
+  <div class="card-title">💬 議論URL（任意）</div>
+  <div id="discList"></div>
+  <div style="display:flex;gap:8px;margin-top:8px;">
+    <input class="fi" id="discInput" type="url"
+      placeholder="https://x.com/... の議論スレッドURL" style="flex:1">
+    <button class="btn outline" onclick="addDiscUrl()" style="height:42px;padding:0 14px">追加</button>
+  </div>
+  <div class="fh" style="margin-top:6px">場所の特定について議論したXのスレッドURLを追加できます</div>
+</div>
+
+<!-- 仮登録ボタン -->
+<div style="display:flex;flex-direction:column;gap:10px">
+  <button class="btn primary full" onclick="submitSpot('unconfirmed')" style="height:50px;font-size:15px">
+    📍 仮登録する（要確認）
+  </button>
+  <button class="btn success full" onclick="submitSpot('confirmed')" style="height:44px">
+    ✅ 確定登録する（情報確認済み）
+  </button>
+  <div style="font-size:10px;color:var(--muted);text-align:center">
+    仮登録 = 地図に薄いピンで表示・後から修正可能
   </div>
 </div>
 ```
 
   </div>
 
-  <button class="submit-btn" id="submitBtn" onclick="submitSpot()">
-    地図に登録する 📍
-  </button>
+  <!-- SUCCESS -->
+
+  <div class="card" id="c4" style="display:none">
+    <div class="success-view show">
+      <div class="s-icon" id="sIcon">📍</div>
+      <div class="s-title" id="sTitle">仮登録完了！</div>
+      <div class="s-sub" id="sSub">地図に薄いピンで表示されました。<br>議論・確認後に本登録へ移行できます。</div>
+      <div class="s-spot" id="sSpot"></div>
+      <div class="s-btns">
+        <button class="s-btn p" onclick="location.href='/'">地図で見る</button>
+        <button class="s-btn s" onclick="resetForm()">続けて登録</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- SUCCESS -->
+<!-- ═══════ 編集タブ ═══════ -->
 
-<div class="card" id="c4" style="display:none">
-  <div class="success show">
-    <div class="sicon">🎉</div>
-    <div class="stitle">登録完了！</div>
-    <div class="ssub">聖地マップに追加されました。<br>みんなが巡礼できます！</div>
-    <div class="sspot" id="sspot"></div>
-    <div class="sbtns">
-      <button class="sbtn p" onclick="location.href='/'">地図で見る</button>
-      <button class="sbtn s" onclick="reset()">続けて登録</button>
+<div id="paneEdit" style="display:none">
+
+  <div class="card">
+    <div class="edit-header">
+      <div class="edit-title">登録済みスポット</div>
+      <div style="font-size:11px;color:var(--muted)" id="editCount">読み込み中...</div>
     </div>
+    <input class="fi" id="editSearch" type="search"
+      placeholder="🔍 作品名・スポット名で検索..."
+      oninput="filterEditList(this.value)" style="margin-bottom:12px">
+    <div class="spot-list" id="spotList">
+      <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- 編集フォーム -->
+
+  <div id="editForm" style="display:none">
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>✏️ スポット編集</span>
+        <button class="btn outline" onclick="closeEditForm()" style="height:32px;padding:0 12px;font-size:11px">✕ 閉じる</button>
+      </div>
+
+```
+  <!-- ステータス -->
+  <div class="field">
+    <div class="fl">ステータス</div>
+    <div class="status-flow" id="editStatusFlow"></div>
+    <select class="fi" id="eStatus" style="height:42px">
+      <option value="unconfirmed">🔴 仮登録（未確認）</option>
+      <option value="discussing">🟡 議論中</option>
+      <option value="confirmed">🟢 確定済み</option>
+      <option value="official">⭐ 公式認定</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <div class="fl">作品名 <span class="req">*</span></div>
+    <input class="fi" id="eWork" type="text" placeholder="例：君の名は。">
+  </div>
+  <div class="field">
+    <div class="fl">スポット名 <span class="req">*</span></div>
+    <input class="fi" id="eTitle" type="text" placeholder="例：須賀神社 階段">
+  </div>
+  <div class="field">
+    <div class="fl">エピソード</div>
+    <input class="fi" id="eEp" type="text" placeholder="例：エンディング">
+  </div>
+  <div class="field">
+    <div class="fl">絵文字</div>
+    <input class="fi" id="eEmoji" type="text" placeholder="⛩️" style="width:70px">
+  </div>
+  <div class="field">
+    <div class="fl">住所・場所名 <span class="req">*</span></div>
+    <input class="fi" id="eLocation" type="text"
+      placeholder="例：東京都新宿区須賀町"
+      oninput="onEditLocationInput(this.value)">
+  </div>
+  <div class="crow" style="margin-bottom:12px">
+    <div class="field" style="margin-bottom:0">
+      <div class="fl">緯度</div>
+      <input class="fi" id="eLat" type="number" step="0.0001">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="fl">経度</div>
+      <input class="fi" id="eLng" type="number" step="0.0001">
+    </div>
+  </div>
+
+  <!-- 議論URL編集 -->
+  <div class="field">
+    <div class="fl">議論URL</div>
+    <div id="eDiscList"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input class="fi" id="eDiscInput" type="url"
+        placeholder="https://x.com/..." style="flex:1">
+      <button class="btn outline" onclick="addEditDiscUrl()" style="height:42px;padding:0 14px">追加</button>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn primary" style="flex:1" onclick="saveEdit()">💾 保存する</button>
+    <button class="btn danger" onclick="deleteSpot()" style="height:44px;padding:0 16px">🗑️</button>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
@@ -262,33 +492,48 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 <script>
 const SUPABASE_URL = 'https://zzpfnszijxkfxtietilr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cGZuc3ppanhrZnh0aWV0aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTI2MzMsImV4cCI6MjA5MDU4ODYzM30.gqVLopJ3kveG1YwAcF6LQ7GFS2tZ0VRlHAG7M4je2Z0';
-const AI_PROVIDER = 'gemini'; // 切り替えはここだけ
 
-// ── URL入力 ──
+let allSpots = [];
+let editingSpotId = null;
+let discUrls = [];
+let editDiscUrls = [];
+let gTimer = null, eGTimer = null;
+
+// ── TABS ──
+function switchTab(tab) {
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('tabEdit').classList.toggle('active', tab === 'edit');
+  document.getElementById('paneRegister').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('paneEdit').style.display = tab === 'edit' ? 'block' : 'none';
+  if (tab === 'edit') loadSpots();
+}
+
+// ── URL INPUT ──
 document.getElementById('urlInput').addEventListener('input', function() {
   const val = this.value.trim();
   const badge = document.getElementById('urlBadge');
   if (val.includes('youtube.com') || val.includes('youtu.be')) {
-    badge.textContent = '▶ YouTube';
-    badge.className = 'url-badge show youtube';
+    badge.textContent = '▶ YouTube'; badge.className = 'url-badge show youtube';
   } else if (val.length > 0) {
-    badge.textContent = '🔗 URL';
-    badge.className = 'url-badge show other';
+    badge.textContent = '🔗 URL'; badge.className = 'url-badge show other';
   } else {
     badge.className = 'url-badge';
   }
 });
 
+// ── STEPS ──
 function setStep(n) {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 4; i++) {
     const c = document.getElementById('s'+i+'c');
     const l = document.getElementById('s'+i+'l');
+    if (!c) continue;
     if (i < n) { c.className='sc done'; c.textContent='✓'; l.className='sl'; }
     else if (i === n) { c.className='sc active'; l.className='sl active'; }
     else { c.className='sc'; l.className='sl'; }
   }
 }
 
+// ── AI ANALYZE ──
 const steps = [
   ['URLを確認中...','プラットフォームを判定しています'],
   ['タイトルを取得中...','動画情報を読み込んでいます'],
@@ -297,7 +542,6 @@ const steps = [
   ['情報を整理中...','スポット情報をまとめています'],
 ];
 
-// ── 解析開始 ──
 async function startAnalyze() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) { showToast('URLを入力してください'); return; }
@@ -316,18 +560,35 @@ async function startAnalyze() {
   }, 900);
 
   try {
-    const result = await analyze(url);
+    let imageUrl = null;
+    const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
+    if (ytMatch) imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
+
+    const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。キー: work(作品名), title(スポット名), location(住所), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name,location,confidence}]最大3件)。JSONのみ。説明不要。';
+
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl, prompt, url })
+    });
+
     clearInterval(timer);
+    if (!res.ok) throw new Error('API ' + res.status);
+    const result = await res.json();
 
-    document.getElementById('fWork').value = result.work || '';
-    document.getElementById('fTitle').value = result.title || '';
-    document.getElementById('fEp').value = result.ep || '';
-    document.getElementById('fEmoji').value = result.emoji || '📍';
-    document.getElementById('fLocation').value = result.location || '';
+    // フォームに反映
+    setField('fWork', result.work, 'tagWork');
+    setField('fTitle', result.title, 'tagTitle');
+    setField('fEp', result.ep, 'tagEp');
+    setField('fEmoji', result.emoji || '📍', 'tagEmoji');
+    setField('fLocation', result.location, 'tagLocation');
 
+    // 候補表示
     if (result.candidates && result.candidates.length > 0) {
       showCandidates(result.candidates);
     }
+
+    // geocode
     if (result.location) geocode(result.location);
 
     document.getElementById('c2').style.display = 'none';
@@ -336,7 +597,6 @@ async function startAnalyze() {
 
   } catch(e) {
     clearInterval(timer);
-    console.error('analyze error:', e);
     document.getElementById('c2').style.display = 'none';
     document.getElementById('c3').style.display = 'block';
     setStep(3);
@@ -344,117 +604,120 @@ async function startAnalyze() {
   }
 }
 
-// ── AI解析（プロバイダー抽象化） ──
-async function analyze(url) {
-  // YouTubeサムネイル取得
-  let imageUrl = null;
-  const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
-  if (ytMatch) {
-    imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
-  }
-
-  const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。キー: work(作品名), title(スポット名), location(住所), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name,location,confidence}]最大3件)。JSONのみ。説明不要。';
-
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageUrl, prompt, url })
-  });
-
-  if (!res.ok) throw new Error('API ' + res.status);
-  return await res.json();
+function setField(id, val, tagId) {
+  const el = document.getElementById(id);
+  if (el) el.value = val || '';
+  const tag = document.getElementById(tagId);
+  if (tag) { tag.textContent = 'AI'; tag.className = 'ai-tag'; }
 }
 
-// ── 候補表示 ──
+function markEdited(el, tagId) {
+  el.classList.add('edited');
+  const tag = document.getElementById(tagId);
+  if (tag) { tag.textContent = '編集済'; tag.className = 'edited-tag'; }
+}
+
+// ── CANDIDATES ──
 function showCandidates(candidates) {
-  const box = document.getElementById('candidatesBox');
+  const card = document.getElementById('candidatesCard');
   const list = document.getElementById('candidatesList');
-  box.style.display = 'block';
+  card.style.display = 'block';
   list.innerHTML = candidates.map((c, i) =>
-    '<div class="cand-item" id="ci'+i+'" onclick="pickCandidate(\''+encodeURIComponent(c.location||c.name)+'\','+i+')">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center">' +
-    '<div class="cand-name">' + (c.name||c.location) + '</div>' +
-    '<div class="cand-conf">確信度 ' + (c.confidence||'?') + '%</div>' +
-    '</div>' +
-    '<div class="cand-loc">📍 ' + (c.location||'—') + '</div>' +
+    '<div class="cand-item" id="ci'+i+'" onclick="pickCandidate(\''+encodeURIComponent(JSON.stringify(c))+'\','+i+')">' +
+    '<div class="cand-top"><div class="cand-name">'+(c.name||c.location||'候補'+(i+1))+'</div>' +
+    '<div class="cand-conf">確信度 '+(c.confidence||'?')+'%</div></div>' +
+    '<div class="cand-loc">📍 '+(c.location||'—')+'</div>' +
     '</div>'
   ).join('');
 }
 
-function pickCandidate(loc, idx) {
+function pickCandidate(encoded, idx) {
+  const c = JSON.parse(decodeURIComponent(encoded));
   document.querySelectorAll('.cand-item').forEach(el => el.classList.remove('selected'));
   document.getElementById('ci'+idx).classList.add('selected');
-  const location = decodeURIComponent(loc);
-  document.getElementById('fLocation').value = location;
-  geocode(location);
+  const loc = c.location || c.name || '';
+  document.getElementById('fLocation').value = loc;
+  document.getElementById('tagLocation').textContent = '選択済';
+  document.getElementById('tagLocation').className = 'ai-tag';
+  geocode(loc);
 }
 
-// ── 住所→座標 ──
-let gTimer = null;
+// ── DISCUSSION URLs ──
+function addDiscUrl() {
+  const input = document.getElementById('discInput');
+  const url = input.value.trim();
+  if (!url) return;
+  discUrls.push(url);
+  renderDiscUrls();
+  input.value = '';
+}
+
+function renderDiscUrls() {
+  const list = document.getElementById('discList');
+  list.innerHTML = discUrls.map((u, i) =>
+    '<div class="disc-item">' +
+    '<div class="disc-url">'+u+'</div>' +
+    '<button class="disc-del" onclick="removeDiscUrl('+i+')">✕</button>' +
+    '</div>'
+  ).join('');
+}
+
+function removeDiscUrl(i) {
+  discUrls.splice(i, 1);
+  renderDiscUrls();
+}
+
+// ── GEOCODE ──
+async function geocode(address) {
+  if (!address) return;
+  console.log('geocoding:', address);
+  try {
+    const r = await fetch('/api/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address })
+    });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.lat && d.lng) {
+        updateMapPreview(address, d.lat, d.lng, 'fLat', 'fLng', 'mapPrev');
+        return;
+      }
+    }
+  } catch(e) { console.log('geocode api err:', e.message); }
+
+  // フォールバック
+  try {
+    const r = await fetch(
+      'https://nominatim.openstreetmap.org/search?format=json&q=' +
+      encodeURIComponent(address) + '&limit=1&accept-language=ja'
+    );
+    const d = await r.json();
+    if (d && d[0]) {
+      updateMapPreview(address, d[0].lat, d[0].lon, 'fLat', 'fLng', 'mapPrev');
+    }
+  } catch(e) { console.log('nominatim err:', e.message); }
+}
+
+function updateMapPreview(address, lat, lng, latId, lngId, prevId) {
+  const latF = parseFloat(lat).toFixed(6);
+  const lngF = parseFloat(lng).toFixed(6);
+  document.getElementById(latId).value = latF;
+  document.getElementById(lngId).value = lngF;
+  document.getElementById(prevId).innerHTML =
+    '<div style="font-size:32px">📍</div>' +
+    '<div style="font-size:12px;font-weight:700">'+address+'</div>' +
+    '<div style="font-size:11px;color:var(--muted)">'+latF+', '+lngF+'</div>' +
+    '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
+}
+
 function onLocationInput(val) {
   clearTimeout(gTimer);
   if (val.length > 3) gTimer = setTimeout(() => geocode(val), 800);
 }
 
-async function geocode(address) {
-  console.log('geocoding:', address);
-  
-  // Vercel経由でgeocode（CORSとUser-Agent問題を回避）
-  try {
-    const r = await fetch('/api/geocode', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: address })
-    });
-    if (r.ok) {
-      const d = await r.json();
-      if (d.lat && d.lng) {
-        const lat = parseFloat(d.lat).toFixed(6);
-        const lng = parseFloat(d.lng).toFixed(6);
-        document.getElementById('fLat').value = lat;
-        document.getElementById('fLng').value = lng;
-        document.getElementById('mapPrev').innerHTML =
-          '<div style="font-size:32px">📍</div>' +
-          '<div style="font-size:12px;font-weight:700">' + address + '</div>' +
-          '<div style="font-size:11px;color:var(--muted)">' + lat + ', ' + lng + '</div>' +
-          '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
-        return;
-      }
-    }
-  } catch(e) {
-    console.log('geocode api err:', e.message);
-  }
-
-  // フォールバック: ブラウザから直接Nominatim
-  try {
-    const r = await fetch(
-      'https://nominatim.openstreetmap.org/search?format=json&q=' +
-      encodeURIComponent(address) + '&limit=1&accept-language=ja',
-      { headers: { 'User-Agent': 'AniFrame/1.0' } }
-    );
-    const d = await r.json();
-    if (d && d[0]) {
-      const lat = parseFloat(d[0].lat).toFixed(6);
-      const lng = parseFloat(d[0].lon).toFixed(6);
-      document.getElementById('fLat').value = lat;
-      document.getElementById('fLng').value = lng;
-      document.getElementById('mapPrev').innerHTML =
-        '<div style="font-size:32px">📍</div>' +
-        '<div style="font-size:12px;font-weight:700">' + address + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + lat + ', ' + lng + '</div>' +
-        '<div style="font-size:11px;color:var(--success);font-weight:700">✓ 座標取得完了</div>';
-      return;
-    }
-  } catch(e) {
-    console.log('nominatim err:', e.message);
-  }
-
-  console.error('geocode失敗:', address);
-  showToast('座標取得失敗。手動で入力してください。');
-}
-
-// ── 登録 ──
-async function submitSpot() {
+// ── SUBMIT ──
+async function submitSpot(status) {
   const work = document.getElementById('fWork').value.trim();
   const title = document.getElementById('fTitle').value.trim();
   const location = document.getElementById('fLocation').value.trim();
@@ -463,9 +726,6 @@ async function submitSpot() {
 
   if (!work || !title) { showToast('作品名とスポット名は必須です'); return; }
   if (!lat || !lng) { showToast('住所を入力して座標を取得してください'); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = '登録中...';
 
   const tag = work.includes('君の名')||work.includes('新海') ? 'kimi'
     : work.includes('スラム')||work.includes('SLAM') ? 'slam'
@@ -476,7 +736,9 @@ async function submitSpot() {
     emoji: document.getElementById('fEmoji').value || '📍',
     ep: document.getElementById('fEp').value.trim() || null,
     count: 0, diff: '★☆☆',
-    status: 'unconfirmed', confidence: 0
+    status: status,
+    confidence: status === 'confirmed' ? 100 : 50,
+    discussion_url: discUrls.length > 0 ? discUrls.join(',') : null
   };
 
   try {
@@ -492,26 +754,230 @@ async function submitSpot() {
     });
     if (!res.ok) throw new Error('保存失敗 ' + res.status);
 
+    const isConfirmed = status === 'confirmed';
     document.getElementById('c3').style.display = 'none';
     document.getElementById('c4').style.display = 'block';
-    document.getElementById('sspot').innerHTML =
-      '<div class="sspot-name">' + spot.emoji + ' ' + spot.title + '</div>' +
-      '<div class="sspot-work">' + spot.work + ' · 📍 ' + spot.location + '</div>';
-    document.getElementById('s3c').className = 'sc done';
-    document.getElementById('s3c').textContent = '✓';
+    document.getElementById('sIcon').textContent = isConfirmed ? '🎉' : '📍';
+    document.getElementById('sTitle').textContent = isConfirmed ? '登録完了！' : '仮登録完了！';
+    document.getElementById('sSub').textContent = isConfirmed
+      ? 'スポットが地図に追加されました！'
+      : '地図に薄いピンで表示されます。\n議論・確認後に本登録へ移行できます。';
+    document.getElementById('sSpot').innerHTML =
+      '<div class="s-spot-name">'+spot.emoji+' '+spot.title+'</div>' +
+      '<div class="s-spot-work">'+spot.work+' · 📍 '+spot.location+'</div>' +
+      '<div style="margin-top:6px"><span class="status-badge '+status+'">'+statusLabel(status)+'</span></div>';
+    setStep(4);
 
   } catch(e) {
     showToast('登録失敗: ' + e.message);
-    btn.disabled = false; btn.textContent = '地図に登録する 📍';
   }
 }
 
-function reset() {
+function statusLabel(s) {
+  return s === 'unconfirmed' ? '🔴 仮登録'
+    : s === 'discussing' ? '🟡 議論中'
+    : s === 'confirmed' ? '🟢 確定済み' : '⭐ 公式認定';
+}
+
+function resetForm() {
   document.getElementById('urlInput').value = '';
   document.getElementById('urlBadge').className = 'url-badge';
+  discUrls = [];
   document.getElementById('c4').style.display = 'none';
   document.getElementById('c1').style.display = 'block';
   setStep(1);
+}
+
+// ── EDIT TAB ──
+async function loadSpots() {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/spots?select=*&order=created_at.desc', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    allSpots = await res.json();
+    document.getElementById('editCount').textContent = allSpots.length + '件';
+    renderSpotList(allSpots);
+  } catch(e) {
+    showToast('読み込み失敗: ' + e.message);
+  }
+}
+
+function renderSpotList(spots) {
+  const list = document.getElementById('spotList');
+  if (!spots.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">スポットがありません</div>';
+    return;
+  }
+  list.innerHTML = spots.map(s =>
+    '<div class="spot-edit-item" onclick="openEditForm(\''+s.id+'\')">' +
+    '<div class="sei-top">' +
+    '<div class="sei-emoji">'+(s.emoji||'📍')+'</div>' +
+    '<div class="sei-info">' +
+    '<div class="sei-title">'+s.title+'</div>' +
+    '<div class="sei-work">'+s.work+'</div>' +
+    '</div>' +
+    '<span class="status-badge '+s.status+'">'+statusLabel(s.status||'unconfirmed')+'</span>' +
+    '</div>' +
+    '<div class="sei-bottom">' +
+    '<div class="sei-loc">📍 '+(s.location||'—')+'</div>' +
+    '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function filterEditList(q) {
+  const query = q.trim().toLowerCase();
+  const filtered = !query ? allSpots : allSpots.filter(s =>
+    s.title.toLowerCase().includes(query) || s.work.toLowerCase().includes(query)
+  );
+  renderSpotList(filtered);
+}
+
+function openEditForm(id) {
+  const s = allSpots.find(x => x.id === id);
+  if (!s) return;
+  editingSpotId = id;
+
+  document.getElementById('eWork').value = s.work || '';
+  document.getElementById('eTitle').value = s.title || '';
+  document.getElementById('eEp').value = s.ep || '';
+  document.getElementById('eEmoji').value = s.emoji || '📍';
+  document.getElementById('eLocation').value = s.location || '';
+  document.getElementById('eLat').value = s.lat || '';
+  document.getElementById('eLng').value = s.lng || '';
+  document.getElementById('eStatus').value = s.status || 'unconfirmed';
+
+  editDiscUrls = s.discussion_url ? s.discussion_url.split(',') : [];
+  renderEditDiscUrls();
+  updateStatusFlow(s.status || 'unconfirmed');
+
+  document.getElementById('editForm').style.display = 'block';
+  document.getElementById('editForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeEditForm() {
+  document.getElementById('editForm').style.display = 'none';
+  editingSpotId = null;
+}
+
+function updateStatusFlow(current) {
+  const statuses = ['unconfirmed', 'discussing', 'confirmed', 'official'];
+  const labels = ['仮登録', '議論中', '確定済み', '公式'];
+  const icons = ['🔴', '🟡', '🟢', '⭐'];
+  const currentIdx = statuses.indexOf(current);
+  const flow = document.getElementById('editStatusFlow');
+  flow.innerHTML = statuses.map((s, i) =>
+    (i > 0 ? '<div class="sf-line '+(i <= currentIdx ? 'done' : '')+'"></div>' : '') +
+    '<div class="sf-item">' +
+    '<div class="sf-circle '+(i < currentIdx ? 'done' : i === currentIdx ? 'current' : '')+'">'+icons[i]+'</div>' +
+    '<div class="sf-label '+(i === currentIdx ? 'current' : '')+'">'+labels[i]+'</div>' +
+    '</div>'
+  ).join('');
+}
+
+document.getElementById('eStatus').addEventListener('change', function() {
+  updateStatusFlow(this.value);
+});
+
+function addEditDiscUrl() {
+  const input = document.getElementById('eDiscInput');
+  const url = input.value.trim();
+  if (!url) return;
+  editDiscUrls.push(url);
+  renderEditDiscUrls();
+  input.value = '';
+}
+
+function renderEditDiscUrls() {
+  document.getElementById('eDiscList').innerHTML = editDiscUrls.map((u, i) =>
+    '<div class="disc-item">' +
+    '<div class="disc-url">'+u+'</div>' +
+    '<button class="disc-del" onclick="removeEditDiscUrl('+i+')">✕</button>' +
+    '</div>'
+  ).join('');
+}
+
+function removeEditDiscUrl(i) {
+  editDiscUrls.splice(i, 1);
+  renderEditDiscUrls();
+}
+
+async function saveEdit() {
+  if (!editingSpotId) return;
+  const work = document.getElementById('eWork').value.trim();
+  const title = document.getElementById('eTitle').value.trim();
+  if (!work || !title) { showToast('作品名とスポット名は必須です'); return; }
+
+  const updates = {
+    work, title,
+    ep: document.getElementById('eEp').value.trim() || null,
+    emoji: document.getElementById('eEmoji').value || '📍',
+    location: document.getElementById('eLocation').value.trim(),
+    lat: parseFloat(document.getElementById('eLat').value),
+    lng: parseFloat(document.getElementById('eLng').value),
+    status: document.getElementById('eStatus').value,
+    discussion_url: editDiscUrls.length > 0 ? editDiscUrls.join(',') : null
+  };
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/spots?id=eq.' + editingSpotId, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error('更新失敗 ' + res.status);
+    showToast('✓ 保存しました！');
+    closeEditForm();
+    loadSpots();
+  } catch(e) {
+    showToast('保存失敗: ' + e.message);
+  }
+}
+
+async function deleteSpot() {
+  if (!editingSpotId) return;
+  if (!confirm('このスポットを削除しますか？')) return;
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/spots?id=eq.' + editingSpotId, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    if (!res.ok) throw new Error('削除失敗');
+    showToast('削除しました');
+    closeEditForm();
+    loadSpots();
+  } catch(e) {
+    showToast('削除失敗: ' + e.message);
+  }
+}
+
+function onEditLocationInput(val) {
+  clearTimeout(eGTimer);
+  if (val.length > 3) eGTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/geocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: val })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d.lat && d.lng) {
+          document.getElementById('eLat').value = parseFloat(d.lat).toFixed(6);
+          document.getElementById('eLng').value = parseFloat(d.lng).toFixed(6);
+          showToast('✓ 座標取得完了');
+        }
+      }
+    } catch(e) {}
+  }, 800);
 }
 
 function showToast(msg) {
