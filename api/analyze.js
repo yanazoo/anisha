@@ -76,7 +76,6 @@ try {
 }
 
 res.status(200).json(result);
-```
 
 } catch (e) {
 console.error(‘err:’, e.message);
