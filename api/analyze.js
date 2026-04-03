@@ -59,7 +59,10 @@ const parsed = JSON.parse(cleaned);
 result = Array.isArray(parsed) ? parsed[0] : parsed;
 } catch(pe) {
 const m = cleaned.match(/{[\s\S]*}/);
-result = m ? JSON.parse(m[0]) : { work: null, title: null, location: null, ep: null, confidence: 0, candidates: [] };
+result = m ? JSON.parse(m[0]) : null;
+}
+if (!result || typeof result !== 'object') {
+result = { work: null, title: null, location: null, ep: null, confidence: 0, candidates: [] };
 }
 console.log(result.work || 0);
 return res.status(200).json(result);
