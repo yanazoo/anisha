@@ -205,6 +205,17 @@ background:var(--black);color:var(--white);
 padding:10px 20px;border-radius:20px;font-size:12px;font-weight:700;
 transition:transform .25s;z-index:1000;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
+
+/* IMAGE COMPARISON */
+.img-comp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+.img-comp-item{display:flex;flex-direction:column;gap:5px;}
+.img-comp-label{font-size:10px;color:var(--sky-dark);font-weight:700;text-align:center;letter-spacing:.04em;}
+.img-comp-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:1px solid var(--gb);display:block;background:var(--sky2);}
+.img-comp-placeholder{width:100%;aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:8px;border:1.5px dashed var(--gb);background:var(--sky);font-size:20px;}
+.img-comp-placeholder span{font-size:10px;color:var(--muted);}
+.img-url-input{width:100%;height:36px;padding:0 10px;margin-top:6px;background:var(--sky);border:1.5px solid var(--gb);border-radius:8px;color:var(--black);font-family:'Yomogi',cursive;font-size:11px;outline:none;transition:all .2s;}
+.img-url-input:focus{background:var(--white);border-color:var(--sky-dark);}
+.img-url-input::placeholder{color:#aac4d8;}
 </style>
 
 </head>
@@ -309,6 +320,25 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
     <input class="fi" id="fEmoji" type="text" placeholder="⛩️" style="width:70px"
       oninput="markEdited(this,'tagEmoji')">
   </div>
+</div>
+
+<!-- 画像比較 -->
+<div class="card" id="imgCompCard" style="display:none">
+  <div class="card-title">🎬 シーン比較</div>
+  <div class="img-comp">
+    <div class="img-comp-item">
+      <div class="img-comp-label">🎬 アニメシーン</div>
+      <img class="img-comp-thumb" id="animeImgThumb" src="" alt="" style="display:none">
+      <div class="img-comp-placeholder" id="animeImgPlaceholder"><span>自動取得</span></div>
+    </div>
+    <div class="img-comp-item">
+      <div class="img-comp-label">📍 現地写真</div>
+      <img class="img-comp-thumb" id="realImgThumb" src="" alt="" style="display:none">
+      <div class="img-comp-placeholder" id="realImgPlaceholder">🗾<span>URL貼付で表示</span></div>
+      <input class="img-url-input" id="fRealImg" type="url" placeholder="現地写真のURLを貼り付け" oninput="onRealImgInput(this.value)">
+    </div>
+  </div>
+  <div style="font-size:10px;color:var(--muted);margin-top:4px">現地写真は任意です。GoogleマップやWikipediaの画像URLを貼り付けてください。</div>
 </div>
 
 <!-- 場所候補 -->
@@ -463,6 +493,20 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
     </div>
   </div>
 
+  <!-- 画像URL編集 -->
+  <div class="img-comp" style="margin-bottom:12px">
+    <div class="img-comp-item">
+      <div class="img-comp-label">🎬 アニメシーン画像URL</div>
+      <img class="img-comp-thumb" id="eAnimeImgThumb" src="" alt="" style="display:none">
+      <input class="img-url-input" id="eAnimeImg" type="url" placeholder="アニメシーン画像URL" oninput="previewEditImg('eAnimeImg','eAnimeImgThumb')">
+    </div>
+    <div class="img-comp-item">
+      <div class="img-comp-label">📍 現地写真URL</div>
+      <img class="img-comp-thumb" id="eRealImgThumb" src="" alt="" style="display:none">
+      <input class="img-url-input" id="eRealImg" type="url" placeholder="現地写真URL" oninput="previewEditImg('eRealImg','eRealImgThumb')">
+    </div>
+  </div>
+
   <!-- 議論URL編集 -->
   <div class="field">
     <div class="fl">議論URL</div>
@@ -501,6 +545,7 @@ let editingSpotId = null;
 let discUrls = [];
 let editDiscUrls = [];
 let gTimer = null, eGTimer = null;
+let currentAnimeImg = null;
 
 // ── TABS ──
 function switchTab(tab) {
@@ -566,6 +611,7 @@ async function startAnalyze() {
     let imageUrl = null;
     const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
     if (ytMatch) imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
+    currentAnimeImg = imageUrl;
 
     const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。' +
       '重要なルール: ' +
@@ -599,6 +645,7 @@ async function startAnalyze() {
     // geocode
     if (result.location) geocode(result.location);
 
+    showImgComp(imageUrl);
     document.getElementById('c2').style.display = 'none';
     document.getElementById('c3').style.display = 'block';
     setStep(3);
@@ -609,6 +656,35 @@ async function startAnalyze() {
     document.getElementById('c3').style.display = 'block';
     setStep(3);
     showToast('AI解析失敗。手動で入力してください。');
+  }
+}
+
+function showImgComp(animeUrl) {
+  const card = document.getElementById('imgCompCard');
+  card.style.display = 'block';
+  const thumb = document.getElementById('animeImgThumb');
+  const placeholder = document.getElementById('animeImgPlaceholder');
+  if (animeUrl) {
+    thumb.src = animeUrl;
+    thumb.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    thumb.style.display = 'none';
+    placeholder.style.display = 'flex';
+  }
+}
+
+function onRealImgInput(url) {
+  const thumb = document.getElementById('realImgThumb');
+  const placeholder = document.getElementById('realImgPlaceholder');
+  if (url && url.startsWith('http')) {
+    thumb.src = url;
+    thumb.style.display = 'block';
+    placeholder.style.display = 'none';
+    thumb.onerror = () => { thumb.style.display = 'none'; placeholder.style.display = 'flex'; };
+  } else {
+    thumb.style.display = 'none';
+    placeholder.style.display = 'flex';
   }
 }
 
@@ -746,7 +822,9 @@ async function submitSpot(status) {
     count: 0, diff: '★☆☆',
     status: status,
     confidence: status === 'confirmed' ? 100 : 50,
-    discussion_url: discUrls.length > 0 ? discUrls.join(',') : null
+    discussion_url: discUrls.length > 0 ? discUrls.join(',') : null,
+    anime_img: currentAnimeImg || null,
+    real_img: document.getElementById('fRealImg').value.trim() || null
   };
 
   try {
@@ -791,6 +869,13 @@ function resetForm() {
   document.getElementById('urlInput').value = '';
   document.getElementById('urlBadge').className = 'url-badge';
   discUrls = [];
+  currentAnimeImg = null;
+  document.getElementById('imgCompCard').style.display = 'none';
+  document.getElementById('fRealImg').value = '';
+  document.getElementById('animeImgThumb').style.display = 'none';
+  document.getElementById('animeImgPlaceholder').style.display = 'flex';
+  document.getElementById('realImgThumb').style.display = 'none';
+  document.getElementById('realImgPlaceholder').style.display = 'flex';
   document.getElementById('c4').style.display = 'none';
   document.getElementById('c1').style.display = 'block';
   setStep(1);
@@ -859,6 +944,11 @@ function openEditForm(id) {
   renderEditDiscUrls();
   updateStatusFlow(s.status || 'unconfirmed');
 
+  const eAnimeImg = document.getElementById('eAnimeImg');
+  const eRealImg = document.getElementById('eRealImg');
+  if (eAnimeImg) { eAnimeImg.value = s.anime_img || ''; previewEditImg('eAnimeImg','eAnimeImgThumb'); }
+  if (eRealImg) { eRealImg.value = s.real_img || ''; previewEditImg('eRealImg','eRealImgThumb'); }
+
   document.getElementById('editForm').style.display = 'block';
   document.getElementById('editForm').scrollIntoView({ behavior: 'smooth' });
 }
@@ -886,6 +976,19 @@ function updateStatusFlow(current) {
 document.getElementById('eStatus').addEventListener('change', function() {
   updateStatusFlow(this.value);
 });
+
+function previewEditImg(inputId, thumbId) {
+  const url = document.getElementById(inputId).value.trim();
+  const thumb = document.getElementById(thumbId);
+  if (!thumb) return;
+  if (url && url.startsWith('http')) {
+    thumb.src = url;
+    thumb.style.display = 'block';
+    thumb.onerror = () => { thumb.style.display = 'none'; };
+  } else {
+    thumb.style.display = 'none';
+  }
+}
 
 function addEditDiscUrl() {
   const input = document.getElementById('eDiscInput');
@@ -924,7 +1027,9 @@ async function saveEdit() {
     lat: parseFloat(document.getElementById('eLat').value),
     lng: parseFloat(document.getElementById('eLng').value),
     status: document.getElementById('eStatus').value,
-    discussion_url: editDiscUrls.length > 0 ? editDiscUrls.join(',') : null
+    discussion_url: editDiscUrls.length > 0 ? editDiscUrls.join(',') : null,
+    anime_img: (document.getElementById('eAnimeImg').value.trim()) || null,
+    real_img: (document.getElementById('eRealImg').value.trim()) || null
   };
 
   try {
