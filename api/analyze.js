@@ -23,7 +23,9 @@ const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) { res.status(500).json({ error: 1 }); return; }
 const body = req.body || {};
 const parts = [];
-if (body.imageUrl) {
+if (body.imageBase64) {
+parts.push({ inline_data: { mime_type: body.imageMime || IMGJ, data: body.imageBase64 } });
+} else if (body.imageUrl) {
 try {
 const imgR = await fetch(body.imageUrl);
 if (imgR.ok) {
