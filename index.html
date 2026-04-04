@@ -451,8 +451,10 @@ function menuSearch(q){
 function renderMarkers(spots){
   Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
   spots.forEach(s=>{
+    const _q=encodeURIComponent((s.work||'')+(s.title?' '+s.title:'')+(s.location?' '+s.location:'')+'　聖地巡礼');
+    const _imgUrl='https://www.google.com/search?q='+_q+'&tbm=isch';
     const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag,s.status)}).addTo(map)
-      .bindPopup('<div class="popup-body">'+(s.anime_img?'<img class="popup-thumb" src="'+s.anime_img+'" onerror="this.style.display=\'none\'">':'')+'<div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><button class="popup-cta" onclick="selectSpot(\''+s.id+'\')">詳細を見る →</button></div>',{maxWidth:230})
+      .bindPopup('<div class="popup-body">'+(s.anime_img?'<img class="popup-thumb" src="'+s.anime_img+'" onerror="this.style.display=\'none\'">':'')+'<div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><a class="popup-cta" href="'+_imgUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none">🔍 画像検索で見る</a></div>',{maxWidth:230})
       .on('click',()=>selectSpot(s.id));
     markers[s.id]=m;
   });
