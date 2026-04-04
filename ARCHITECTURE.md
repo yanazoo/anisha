@@ -19,8 +19,9 @@
 | ホスティング | Vercel | 無料枠 |
 | データベース | Supabase (PostgreSQL) | 無料枠 |
 | 地図 | Leaflet + OpenStreetMap | 完全無料 |
-| AI解析 | Gemini API (gemini-2.0-flash) | 無料枠 |
+| AI解析 | Gemini API (gemini-2.5-flash-preview-04-17) | 無料枠 |
 | 座標変換 | Nominatim (OSM) | 完全無料 |
+| 動画時間取得 | YouTube IFrame Player API | 無料 |
 | フォント | Yomogi (Google Fonts) | 無料 |
 
 フレームワークは使用せず、**バニラHTML/CSS/JavaScript** で構成。
@@ -36,8 +37,9 @@ anisha/
 ├── register.html       # スポット登録・編集画面
 ├── ARCHITECTURE.md     # 本ドキュメント
 └── api/
-    ├── analyze.js      # Gemini API 呼び出し（Vercel Function）
-    └── geocode.js      # 住所 → 座標変換（Vercel Function）
+    ├── analyze.js      # Gemini API 呼び出し（画像・URL解析）
+    ├── scenes.js       # Gemini API 呼び出し（YouTube動画全体解析）
+    └── geocode.js      # 住所 → 座標変換（Nominatim）
 ```
 
 ---
@@ -50,12 +52,19 @@ anisha/
     ├─── Supabase REST API ──────────────── Supabase PostgreSQL
     │        spots テーブルの読み書き
     │
+    ├─── /api/scenes ────────────────────── Gemini API (Google)
+    │        YouTube URL → 動画全体を解析      gemini-2.5-flash-preview-04-17
+    │        名シーン・聖地スポットを最大5件返す   fileData: video/youtube
+    │
     ├─── /api/analyze ───────────────────── Gemini API (Google)
-    │        YouTube URL / 画像 → AI解析       gemini-2.0-flash
+    │        画像URL / Base64 → AI解析         gemini-2.5-flash-preview-04-17
     │        作品名・場所・エピソードを返す
     │
     ├─── /api/geocode ───────────────────── Nominatim (OpenStreetMap)
     │        住所テキスト → 緯度経度変換
+    │
+    ├─── YouTube IFrame Player API ─────── YouTube（クライアントサイド）
+    │        動画の長さを取得して表示
     │
     └─── Leaflet.js ─────────────────────── OpenStreetMap タイル
              地図描画・ピン表示
@@ -129,36 +138,58 @@ CREATE POLICY "Public delete" ON spots FOR DELETE USING (true);
 - ヘッダー検索・スライドメニュー検索（作品名・場所名・スポット名）
 - 左スライドメニュー（作品別アコーディオン一覧）
 - スポットタップ → ポップアップ（アニメ画像サムネイル付き）→ 詳細パネル
-  - PC: 下部バー（AnimeとRealの画像ボックス）
+  - PC: 下部バー（Animeシーン と Real現地の画像ボックス）
   - SP: ボトムシート（アニメ/現地の横並び画像ストリップ）
 - Google マップナビ起動
 - モバイル用ドロワー（スポット一覧スワイプ）
 
+---
+
 ### register.html（登録・編集画面）
 
 **タブ構成**
-- `新規登録` タブ：4ステップのウィザード形式
+- `新規登録` タブ：ウィザード形式
 - `編集・修正` タブ：登録済みスポット一覧・編集・削除
 
-**新規登録フロー（4ステップ）**
+**新規登録フロー**
 
 ```
 Step1: URL入力
-  └─ YouTube / Instagram / X / TikTok の URL を貼り付け
+  ├─ YouTube URL を貼り付け → フレームプレビューを2カラムで表示
+  │    ├─ サムネ（高画質 maxresdefault）
+  │    ├─ フレームA（hqdefault）
+  │    └─ フレーム①② （1.jpg / 2.jpg）
+  │    ├─ シングルタップ: フレーム選択（解析対象）
+  │    ├─ ダブルタップ: ライトボックスで拡大表示
+  │    └─ YouTube IFrame API で動画時間を自動取得・表示
+  ├─ 解析する時間範囲を任意で指定（開始〜終了）
+  └─ または直接画像をアップロードして解析
 
-Step2: AI解析中
-  └─ /api/analyze に POST → Gemini がサムネイル画像＋URLを解析
+Step2: AI解析中（ローディング表示）
+
+Step2b: シーン選択（YouTubeの場合）
+  ├─ /api/scenes が動画全体を解析（Gemini 2.5 Flash）
+  ├─ 名シーン・聖地スポットを最大5件カード表示
+  │    ├─ サムネイル（タイムスタンプ付き）
+  │    ├─ シーン説明・推定スポット名
+  │    ├─ 推定住所・確信度バッジ
+  │    └─ 「動画で確認 ↗」（タイムスタンプ付きYouTubeリンク）
+  └─ シーンを選択 → Step3 へ自動遷移・フォーム自動入力
+
+  ※ シーン取得失敗・非YouTube → /api/analyze（画像解析）にフォールバック
+  ※ Gemini クォータ切れ（429）→ エラーカード表示・Step1に戻れる
 
 Step3: 確認・修正
-  ├─ 作品名・スポット名・エピソード・絵文字を確認・修正
+  ├─ 作品名・スポット名・エピソード・絵文字を確認・手動修正可能
   ├─ 🎬 シーン比較カード
-  │    ├─ アニメシーン：YouTubeサムネイルを自動表示（anime_img）
+  │    ├─ アニメシーン：Step1で選択したフレームを表示（anime_img）
+  │    │    └─ 4枚から選び直し可能（タップで変更）
   │    └─ 現地写真：URLを貼り付けてプレビュー表示（real_img）
   ├─ 場所候補を複数表示（タップで選択）
   ├─ 住所入力 → /api/geocode → 地図プレビュー
   └─ 議論URLの追加
 
-Step4: 仮登録 / 確定登録
+Step4: 登録
   ├─ 仮登録（unconfirmed）：地図に薄いピンで表示
   └─ 確定登録（confirmed）：通常ピンで表示
 ```
@@ -167,18 +198,64 @@ Step4: 仮登録 / 確定登録
 
 ## API 仕様
 
+### `POST /api/scenes`
+
+YouTube動画をGeminiで全体解析し、聖地スポットになりうるシーンを最大5件返す。
+
+**リクエスト**
+```json
+{
+  "url": "https://www.youtube.com/watch?v=...",
+  "startTime": "1:30",
+  "endTime": "5:00"
+}
+```
+`startTime` / `endTime` は任意。指定した場合はその範囲のみ解析。
+
+**レスポンス（成功）**
+```json
+{
+  "scenes": [
+    {
+      "timestamp": 90,
+      "description": "主人公が走り抜ける石畳の坂道",
+      "spotName": "須賀神社 男坂",
+      "location": "東京都新宿区須賀町",
+      "confidence": 88,
+      "emoji": "⛩️",
+      "work": "君の名は。",
+      "ep": "終盤・再会シーン"
+    }
+  ]
+}
+```
+
+**レスポンス（クォータ切れ）**
+```json
+{ "error": "quota_exceeded", "message": "Gemini APIのクォータが上限に達しています。..." }
+```
+
+**使用モデル**: `gemini-2.5-flash-preview-04-17`
+**Gemini 機能**: `fileData: { mimeType: "video/youtube", fileUri: url }`
+
+---
+
 ### `POST /api/analyze`
 
-YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げて聖地情報を返す。
+画像（URL または Base64）をGeminiで解析し、聖地情報を返す。
+非YouTube URL・画像アップロード・シーン取得失敗時のフォールバックとして使用。
 
 **リクエスト**
 ```json
 {
   "url": "https://www.youtube.com/watch?v=...",
   "imageUrl": "https://i.ytimg.com/vi/.../maxresdefault.jpg",
-  "prompt": "このアニメシーンの聖地（実在の場所）を特定してください。..."
+  "imageBase64": "...",
+  "imageMime": "image/jpeg",
+  "prompt": "このアニメシーンの聖地を特定してください。..."
 }
 ```
+`imageUrl` か `imageBase64` のいずれかを使用。
 
 **レスポンス**
 ```json
@@ -189,20 +266,16 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
   "ep": "エンディング",
   "confidence": 85,
   "candidates": [
-    { "title": "須賀神社 階段", "location": "東京都新宿区須賀町", "confidence": 85 }
+    { "name": "須賀神社", "location": "東京都新宿区須賀町1-5", "confidence": 85 }
   ]
 }
 ```
 
-**使用モデル**: `gemini-2.0-flash`
-（2.5-flash はレート制限が厳しいため 2.0-flash を使用）
-
-**注意**: Gemini が解析不能な場合 `"null"` を返すことがある。
-その場合は `{ work: null, title: null, ... }` の空結果にフォールバック。
+**使用モデル**: `gemini-2.5-flash-preview-04-17`（コード内はchar配列で難読化）
 
 ---
 
-### `POST /api/geocode`
+### `GET /api/geocode`
 
 住所テキストを緯度経度に変換する。Nominatim（OpenStreetMap）を使用。
 
@@ -218,6 +291,17 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
 
 ---
 
+## エラーハンドリング
+
+| エラー | 状況 | 対処 |
+|--------|------|------|
+| Gemini 429（クォータ切れ） | 無料枠の1分/日上限超過 | `quota_exceeded` を返す → UIでエラーカード表示 |
+| Gemini が scenes を返さない | 動画が非対応・ブロック等 | `{ scenes: [] }` → /api/analyze にフォールバック |
+| Gemini が null を返す | 解析不能 | `{ work: null, title: null, ... }` の空結果 |
+| geocode 失敗 | 住所不明・Nominatim 障害 | トースト通知・手動入力へ |
+
+---
+
 ## 修正済みバグ一覧
 
 | 問題 | 対処 |
@@ -225,9 +309,10 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
 | CSS変数が `var(–name)` のエンダッシュ（U+2013）でスタイル全崩れ | `var(--name)` に一括置換（index.html 113箇所、register.html 105箇所） |
 | register.html にMarkdownコードフェンス（` ``` `）が混入 | 4箇所除去 |
 | Gemini が `"null"` を返すと `result.work` で500クラッシュ | nullチェック追加 |
-| `gemini-2.5-flash` でレート制限（429）エラー頻発 | `gemini-2.0-flash` に変更 |
+| `gemini-2.5-flash` でレート制限（429）エラー頻発 | 一時的に `gemini-2.0-flash` に変更（現在は 2.5 に戻した） |
 | ピンのステータス色分けが未実装 | unconfirmed=透明、discussing=黄、official=金⭐ を実装 |
 | アニメ/現地サムネイルが表示されない | anime_img / real_img カラム追加・画像比較UIを実装 |
+| シーン選択後に Step1 のフレーム選択が上書きされる | selectScene() で currentAnimeImg を上書きしないよう修正 |
 
 ---
 
@@ -274,6 +359,10 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
   - 聖地で撮った写真をアップロード
   - `count`（再現写真数）を自動更新
 
+- [ ] **シーンサムネイルの高画質化**
+  - YouTube Data API v3 を使えば任意タイムスタンプの高解像度フレームが取得可能
+  - 現状は YouTube の自動生成サムネイル（1.jpg/2.jpg 等、最大120×90）を使用
+
 ---
 
 ## 開発ガイド
@@ -294,6 +383,11 @@ npx vercel dev
 ### デプロイ
 
 `main` ブランチへのプッシュで Vercel が自動デプロイ。
+
+### analyze.js の難読化について
+
+iPhone の GitHub アプリでファイルを編集すると引用符・バッククォートが特殊文字（U+2018等）に変換されてしまうため、`analyze.js` は文字列リテラルを char code 配列に置き換えた難読化コードになっている。
+モデル名変更など文字列の修正は char code 値を直接変更する必要がある（例：`48`='0' → `53`='5'）。
 
 ### 注意事項
 
