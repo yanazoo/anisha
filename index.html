@@ -237,6 +237,15 @@ box-shadow:0 4px 20px rgba(74,156,199,0.2);transition:transform .25s ease;
 z-index:2000;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 
+/* THUMBNAILS */
+.scene-img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;}
+.popup-thumb{display:block;width:calc(100% + 36px);height:76px;object-fit:cover;margin:-16px -18px 10px;border-radius:10px 10px 0 0;}
+.sheet-imgs{display:none;gap:8px;margin-bottom:14px;}
+.sheet-imgs.show{display:flex;}
+.sheet-img-wrap{flex:1;border-radius:10px;overflow:hidden;border:1px solid var(--gb);position:relative;}
+.sheet-img{width:100%;height:88px;object-fit:cover;display:block;}
+.sheet-img-label{position:absolute;bottom:0;left:0;right:0;padding:3px 8px;background:rgba(0,0,0,0.52);color:#fff;font-size:9px;font-weight:700;letter-spacing:.06em;}
+
 @media(max-width:768px){
 .detail-panel{display:none!important;}
 .mobile-sheet{display:block;}
@@ -305,8 +314,16 @@ z-index:2000;white-space:nowrap;}
   <div class="detail-panel" id="detailPanel">
     <div class="detail-inner">
       <div class="detail-scenes">
-        <div class="scene-box"><div class="scene-emoji" id="detailEmoji">⛩️</div><div class="scene-label">Anime</div></div>
-        <div class="scene-box"><div class="scene-emoji">📍</div><div class="scene-label">Real</div></div>
+        <div class="scene-box" style="overflow:hidden;position:relative">
+          <img class="scene-img" id="detailAnimeImg" src="" alt="" style="display:none">
+          <div class="scene-emoji" id="detailEmoji" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px">⛩️</div>
+          <div class="scene-label" style="position:absolute;bottom:4px;left:0;right:0;text-align:center;z-index:1;background:rgba(255,255,255,0.7);padding:1px 0">Anime</div>
+        </div>
+        <div class="scene-box" style="overflow:hidden;position:relative">
+          <img class="scene-img" id="detailRealImg" src="" alt="" style="display:none">
+          <div class="scene-emoji" id="detailRealEmoji" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px">📍</div>
+          <div class="scene-label" style="position:absolute;bottom:4px;left:0;right:0;text-align:center;z-index:1;background:rgba(255,255,255,0.7);padding:1px 0">Real</div>
+        </div>
       </div>
       <div class="detail-body">
         <div class="detail-text">
@@ -327,6 +344,16 @@ z-index:2000;white-space:nowrap;}
 <div class="mobile-sheet" id="mobileSheet">
   <div class="sheet-drag" onclick="closeDetail()"><div class="sheet-drag-bar"></div></div>
   <div class="sheet-body">
+    <div class="sheet-imgs" id="sheetImgs">
+      <div class="sheet-img-wrap">
+        <img class="sheet-img" id="sheetAnimeImg" src="" alt="">
+        <div class="sheet-img-label">🎬 ANIME</div>
+      </div>
+      <div class="sheet-img-wrap">
+        <img class="sheet-img" id="sheetRealImg" src="" alt="">
+        <div class="sheet-img-label">📍 REAL</div>
+      </div>
+    </div>
     <div class="sheet-emoji" id="sheetEmoji">⛩️</div>
     <div class="sheet-title" id="sheetTitle">—</div>
     <div class="sheet-work" id="sheetWork">—</div>
@@ -425,7 +452,7 @@ function renderMarkers(spots){
   Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
   spots.forEach(s=>{
     const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag,s.status)}).addTo(map)
-      .bindPopup('<div class="popup-body"><div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><button class="popup-cta" onclick="selectSpot(\''+s.id+'\')">詳細を見る →</button></div>',{maxWidth:230})
+      .bindPopup('<div class="popup-body">'+(s.anime_img?'<img class="popup-thumb" src="'+s.anime_img+'" onerror="this.style.display=\'none\'">':'')+'<div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><button class="popup-cta" onclick="selectSpot(\''+s.id+'\')">詳細を見る →</button></div>',{maxWidth:230})
       .on('click',()=>selectSpot(s.id));
     markers[s.id]=m;
   });
@@ -451,12 +478,30 @@ function selectSpot(id){
   map.flyTo([s.lat,s.lng],15,{duration:0.9});
   if(markers[id])markers[id].openPopup();
   const tagHtml=[s.location&&'<span class="detail-tag">📍 '+s.location+'</span>',s.count&&'<span class="detail-tag">📸 '+s.count.toLocaleString()+'</span>',s.diff&&'<span class="detail-tag">'+s.diff+'</span>',s.ep&&'<span class="detail-tag">'+s.ep+'</span>'].filter(Boolean).join('');
-  document.getElementById('detailEmoji').textContent=s.emoji||'📍';
+  const dAnimeImg=document.getElementById('detailAnimeImg');
+  const dAnimeEmoji=document.getElementById('detailEmoji');
+  if(s.anime_img){dAnimeImg.src=s.anime_img;dAnimeImg.style.display='block';dAnimeEmoji.style.display='none';}
+  else{dAnimeImg.style.display='none';dAnimeEmoji.style.display='flex';}
+  dAnimeEmoji.textContent=s.emoji||'📍';
+  const dRealImg=document.getElementById('detailRealImg');
+  const dRealEmoji=document.getElementById('detailRealEmoji');
+  if(s.real_img){dRealImg.src=s.real_img;dRealImg.style.display='block';dRealEmoji.style.display='none';}
+  else{dRealImg.style.display='none';dRealEmoji.style.display='flex';}
   document.getElementById('detailTitle').textContent=s.title;
   document.getElementById('detailWork').textContent=s.work+(s.ep?' — '+s.ep:'');
   document.getElementById('detailTags').innerHTML=tagHtml;
   document.getElementById('detailPanel').classList.add('show');
   document.getElementById('sheetEmoji').textContent=s.emoji||'📍';
+  const sImgs=document.getElementById('sheetImgs');
+  const sAnimeImg=document.getElementById('sheetAnimeImg');
+  const sRealImg=document.getElementById('sheetRealImg');
+  if(s.anime_img||s.real_img){
+    sImgs.classList.add('show');
+    if(s.anime_img){sAnimeImg.src=s.anime_img;sAnimeImg.parentElement.style.display='block';}
+    else{sAnimeImg.parentElement.style.display='none';}
+    if(s.real_img){sRealImg.src=s.real_img;sRealImg.parentElement.style.display='block';}
+    else{sRealImg.parentElement.style.display='none';}
+  }else{sImgs.classList.remove('show');}
   document.getElementById('sheetTitle').textContent=s.title;
   document.getElementById('sheetWork').textContent=s.work+(s.ep?' — '+s.ep:'');
   document.getElementById('sheetTags').innerHTML=tagHtml.replace(/detail-tag/g,'sheet-tag');

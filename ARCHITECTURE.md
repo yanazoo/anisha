@@ -83,6 +83,8 @@ anisha/
 | `status` | text | ステータス（後述） |
 | `confidence` | int | AI解析の確信度 0〜100 |
 | `discussion_url` | text | 議論URL（カンマ区切りで複数可） |
+| `anime_img` | text | アニメシーン画像URL（YouTubeサムネイル等） |
+| `real_img` | text | 現地写真URL（任意） |
 | `created_at` | timestamp | 登録日時 |
 
 ### ステータス設計
@@ -122,11 +124,13 @@ CREATE POLICY "Public delete" ON spots FOR DELETE USING (true);
 
 **主要機能**
 - Leaflet + OpenStreetMap で地図表示（彩度低め・明度高めにフィルタ）
-- ステータスに応じたピン表示（透明度・ボーダー色）
+- ステータスに応じたピン表示（透明度・ボーダー色・⭐バッジ）
 - 作品タグに応じたピン色分け（kimi=赤、slam=緑、tenki=紫、other=橙）
 - ヘッダー検索・スライドメニュー検索（作品名・場所名・スポット名）
 - 左スライドメニュー（作品別アコーディオン一覧）
-- スポットタップ → ポップアップ → 詳細パネル（PC: 下部バー / SP: ボトムシート）
+- スポットタップ → ポップアップ（アニメ画像サムネイル付き）→ 詳細パネル
+  - PC: 下部バー（AnimeとRealの画像ボックス）
+  - SP: ボトムシート（アニメ/現地の横並び画像ストリップ）
 - Google マップナビ起動
 - モバイル用ドロワー（スポット一覧スワイプ）
 
@@ -147,6 +151,9 @@ Step2: AI解析中
 
 Step3: 確認・修正
   ├─ 作品名・スポット名・エピソード・絵文字を確認・修正
+  ├─ 🎬 シーン比較カード
+  │    ├─ アニメシーン：YouTubeサムネイルを自動表示（anime_img）
+  │    └─ 現地写真：URLを貼り付けてプレビュー表示（real_img）
   ├─ 場所候補を複数表示（タップで選択）
   ├─ 住所入力 → /api/geocode → 地図プレビュー
   └─ 議論URLの追加
@@ -168,7 +175,7 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
 ```json
 {
   "url": "https://www.youtube.com/watch?v=...",
-  "imageUrl": "https://i.ytimg.com/vi/.../hqdefault.jpg",
+  "imageUrl": "https://i.ytimg.com/vi/.../maxresdefault.jpg",
   "prompt": "このアニメシーンの聖地（実在の場所）を特定してください。..."
 }
 ```
@@ -182,13 +189,16 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
   "ep": "エンディング",
   "confidence": 85,
   "candidates": [
-    { "title": "須賀神社 階段", "location": "東京都新宿区須賀町", "lat": 35.684, "lng": 139.719 }
+    { "title": "須賀神社 階段", "location": "東京都新宿区須賀町", "confidence": 85 }
   ]
 }
 ```
 
 **使用モデル**: `gemini-2.0-flash`
 （2.5-flash はレート制限が厳しいため 2.0-flash を使用）
+
+**注意**: Gemini が解析不能な場合 `"null"` を返すことがある。
+その場合は `{ work: null, title: null, ... }` の空結果にフォールバック。
 
 ---
 
@@ -208,15 +218,16 @@ YouTube動画などのURLとプロンプトを受け取り、Gemini APIに投げ
 
 ---
 
-## 既知の問題・対処済み事項
+## 修正済みバグ一覧
 
-| 問題 | 状況 | 対処 |
-|------|------|------|
-| iPhone GitHub アプリで編集すると引用符・バッククォートが特殊文字に変換される | 解消 | Claude Code での開発に移行 |
-| CSS変数が `var(–name)` のエンダッシュ（U+2013）になりスタイル崩れ | 修正済み | `var(--name)` に一括置換 |
-| HTMLにMarkdownのコードフェンス（` ``` `）が混入 | 修正済み | 除去 |
-| Gemini APIから `"null"` が返ると `result.work` でクラッシュ（500エラー） | 修正済み | nullチェックを追加 |
-| `gemini-2.5-flash` でレート制限（429）エラー | 修正済み | `gemini-2.0-flash` に変更 |
+| 問題 | 対処 |
+|------|------|
+| CSS変数が `var(–name)` のエンダッシュ（U+2013）でスタイル全崩れ | `var(--name)` に一括置換（index.html 113箇所、register.html 105箇所） |
+| register.html にMarkdownコードフェンス（` ``` `）が混入 | 4箇所除去 |
+| Gemini が `"null"` を返すと `result.work` で500クラッシュ | nullチェック追加 |
+| `gemini-2.5-flash` でレート制限（429）エラー頻発 | `gemini-2.0-flash` に変更 |
+| ピンのステータス色分けが未実装 | unconfirmed=透明、discussing=黄、official=金⭐ を実装 |
+| アニメ/現地サムネイルが表示されない | anime_img / real_img カラム追加・画像比較UIを実装 |
 
 ---
 
@@ -286,7 +297,7 @@ npx vercel dev
 
 ### 注意事項
 
-- iPhoneのGitHubアプリでのファイル編集は避ける（文字化けの原因）
+- iPhoneのGitHubアプリでのファイル編集は避ける（引用符・バッククォートが特殊文字に変換される）
 - Claude Code での編集を推奨
 - Supabase の anon key はクライアントに公開されているが、RLS で保護されている前提
 
