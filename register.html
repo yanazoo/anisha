@@ -439,10 +439,21 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
   <div style="font-size:10px;color:var(--muted);margin-top:4px">フレームをタップして選択、またはアニメシーンの画像URLを直接貼り付けてください。</div>
 </div>
 
+<!-- 解析ステータス（場所不明時） -->
+<div id="analyzeStatusCard" style="display:none;margin-bottom:14px"></div>
+
 <!-- 場所候補 -->
 <div class="card" id="candidatesCard" style="display:none">
   <div class="card-title">📍 場所候補（タップで選択）</div>
   <div id="candidatesList"></div>
+</div>
+
+<!-- 現地写真候補 -->
+<div class="card" id="realPhotosCard" style="display:none">
+  <div class="card-title">📸 現地写真候補</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">周辺スポットの写真です。タップで現地写真として選択 / ダブルタップで拡大</div>
+  <div id="realPhotosList" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch"></div>
+  <div style="font-size:10px;color:var(--muted);margin-top:6px">出典: Wikipedia / Wikimedia Commons</div>
 </div>
 
 <div class="card">
@@ -839,42 +850,8 @@ async function startAnalyze() {
   currentYtId = ytMatch ? ytMatch[1] : null;
 
   try {
-    // YouTube動画 → /api/scenes でシーン一覧を取得
-    if (currentYtId && !uploadedImageBase64) {
-      const res = await fetch('/api/scenes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          startTime: document.getElementById('analyzeStart').value.trim() || null,
-          endTime:   document.getElementById('analyzeEnd').value.trim()   || null
-        })
-      });
-      clearInterval(timer);
-      const data = await res.json();
-
-      if (res.status === 429 || data.error === 'quota_exceeded') {
-        document.getElementById('c2').style.display = 'none';
-        document.getElementById('cQuotaError').style.display = 'block';
-        setStep(1);
-        return;
-      }
-
-      if (!res.ok) throw new Error('scenes API ' + res.status);
-
-      if (data.scenes && data.scenes.length > 0) {
-        document.getElementById('c2').style.display = 'none';
-        renderScenes(data.scenes, currentYtId);
-        document.getElementById('cScenes').style.display = 'block';
-        setStep(2);
-        return;
-      }
-      // シーンが取得できなかった場合はフォールバック
-    }
-
-    // 画像アップロード or 非YouTube → /api/analyze で直接解析
+    // 選択したフレーム画像（または画像アップロード）で解析
     await runDirectAnalyze(url, timer);
-
   } catch(e) {
     clearInterval(timer);
     showToast('解析失敗: ' + e.message + '　手動で入力してください');
@@ -983,12 +960,41 @@ async function runDirectAnalyze(url, existingTimer) {
   setField('fLocation', result.location, 'tagLocation');
 
   if (result.candidates && result.candidates.length > 0) showCandidates(result.candidates);
-  if (result.location) geocode(result.location);
+  if (result.location) {
+    geocode(result.location);
+  } else {
+    showAnalyzeStatus(result.confidence);
+  }
 
   showImgComp(imageUrl);
   document.getElementById('c2').style.display = 'none';
   document.getElementById('c3').style.display = 'block';
   setStep(3);
+}
+
+function showAnalyzeStatus(confidence) {
+  const el = document.getElementById('analyzeStatusCard');
+  if (!el) return;
+  const conf = confidence || 0;
+  let icon, color, msg;
+  if (conf === 0) {
+    icon = '❌'; color = '#c62828';
+    msg = '場所を特定できませんでした。アニメシーンが映っているフレームを選択し直すか、住所を手動で入力してください。';
+  } else if (conf < 30) {
+    icon = '⚠️'; color = '#e65100';
+    msg = `確信度 ${conf}% — 場所の特定が困難です。候補地名を参考に住所を確認・修正してください。`;
+  } else {
+    icon = '🔍'; color = '#1565c0';
+    msg = `確信度 ${conf}% — 住所情報が取得できませんでした。候補から選択するか手動で入力してください。`;
+  }
+  el.style.display = 'block';
+  el.innerHTML = `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#fff5f5;border:1.5px solid #fecaca;border-radius:10px">
+    <span style="font-size:22px;flex-shrink:0">${icon}</span>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:${color};margin-bottom:3px">解析結果: 場所不明</div>
+      <div style="font-size:11px;color:#555;line-height:1.5">${msg}</div>
+    </div>
+  </div>`;
 }
 
 function showImgComp(animeUrl) {
@@ -1145,6 +1151,7 @@ async function geocode(address) {
       const d = await r.json();
       if (d.lat && d.lng) {
         updateMapPreview(address, d.lat, d.lng, 'fLat', 'fLng', 'mapPrev');
+        fetchRealPhotos(d.lat, d.lng);
         return;
       }
     }
@@ -1159,8 +1166,55 @@ async function geocode(address) {
     const d = await r.json();
     if (d && d[0]) {
       updateMapPreview(address, d[0].lat, d[0].lon, 'fLat', 'fLng', 'mapPrev');
+      fetchRealPhotos(d[0].lat, d[0].lon);
     }
   } catch(e) { console.log('nominatim err:', e.message); }
+}
+
+// ── 現地写真候補 ──
+async function fetchRealPhotos(lat, lng) {
+  const card = document.getElementById('realPhotosCard');
+  const list = document.getElementById('realPhotosList');
+  if (!card || !list) return;
+  card.style.display = 'none';
+  list.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:8px">📸 周辺写真を検索中...</div>';
+  card.style.display = 'block';
+  try {
+    const res = await fetch('/api/photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng })
+    });
+    const data = await res.json();
+    if (!data.photos || data.photos.length === 0) {
+      card.style.display = 'none'; return;
+    }
+    const tapTimes = {};
+    list.innerHTML = data.photos.map((p, i) => {
+      const eu = encodeURIComponent(p.url);
+      const et = (p.title || '').replace(/'/g, '').replace(/"/g, '');
+      return '<div style="flex-shrink:0;width:130px;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#000;transition:border-color .15s" id="rp'+i+'" onclick="rpTap(\''+eu+'\','+i+',\''+et+'\')">' +
+        '<img src="'+p.url+'" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block" onerror="this.closest(\'div\').style.display=\'none\'">' +
+        '<div style="font-size:9px;padding:3px 5px;background:var(--sky2);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+et+'</div>' +
+        '</div>';
+    }).join('');
+    card.style.display = 'block';
+  } catch(e) {
+    card.style.display = 'none';
+  }
+}
+
+const _rpTap = {};
+function rpTap(encodedUrl, idx, title) {
+  const now = Date.now();
+  const prev = _rpTap[idx] || 0; _rpTap[idx] = now;
+  if (now - prev < 380) { _rpTap[idx] = 0; openLightbox(decodeURIComponent(encodedUrl), title); return; }
+  const url = decodeURIComponent(encodedUrl);
+  document.querySelectorAll('#realPhotosList > div').forEach(d => d.style.borderColor = 'transparent');
+  const el = document.getElementById('rp'+idx);
+  if (el) el.style.borderColor = 'var(--accent)';
+  document.getElementById('fRealImg').value = url;
+  onRealImgInput(url);
 }
 
 function updateMapPreview(address, lat, lng, latId, lngId, prevId) {
@@ -1266,6 +1320,9 @@ function resetForm() {
   document.getElementById('cScenes').style.display = 'none';
   document.getElementById('cQuotaError').style.display = 'none';
   document.getElementById('sceneList').innerHTML = '';
+  document.getElementById('analyzeStatusCard').style.display = 'none';
+  document.getElementById('realPhotosCard').style.display = 'none';
+  document.getElementById('realPhotosList').innerHTML = '';
   currentYtId = null;
   document.getElementById('imgCompCard').style.display = 'none';
   document.getElementById('fAnimeImg').value = '';

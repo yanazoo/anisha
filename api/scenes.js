@@ -36,7 +36,7 @@ const handler = async (req, res) => {
 JSONのみ返してください。説明文は不要です。`;
 
   try {
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=' + apiKey;
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
 
     const geminiRes = await fetch(endpoint, {
       method: 'POST',
