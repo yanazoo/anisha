@@ -340,6 +340,20 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
       <div class="card-title">🎬 シーンを選択してください</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:14px">AIが動画から名シーン・聖地スポットをピックアップしました。登録したいシーンをタップしてください。</div>
       <div id="sceneList"></div>
+      <button class="btn outline full" style="margin-top:10px" onclick="backToStep1()">← URLを入力し直す</button>
+    </div>
+  </div>
+
+  <!-- QUOTA ERROR -->
+  <div id="cQuotaError" style="display:none">
+    <div class="card" style="border-color:#fecaca;background:#fff5f5">
+      <div class="card-title" style="color:#c62828">⚠️ Gemini APIのクォータ上限</div>
+      <div style="font-size:12px;color:#666;margin-bottom:14px;line-height:1.6">
+        Gemini APIの無料利用枠の上限に達しました。<br>
+        しばらく時間をおいてから再度お試しください。<br>
+        <span style="font-size:11px;color:#999">（通常は1分〜数時間で回復します）</span>
+      </div>
+      <button class="btn outline full" onclick="backToStep1()">← 戻る</button>
     </div>
   </div>
 
@@ -767,8 +781,16 @@ async function startAnalyze() {
         body: JSON.stringify({ url })
       });
       clearInterval(timer);
-      if (!res.ok) throw new Error('scenes API ' + res.status);
       const data = await res.json();
+
+      if (res.status === 429 || data.error === 'quota_exceeded') {
+        document.getElementById('c2').style.display = 'none';
+        document.getElementById('cQuotaError').style.display = 'block';
+        setStep(1);
+        return;
+      }
+
+      if (!res.ok) throw new Error('scenes API ' + res.status);
 
       if (data.scenes && data.scenes.length > 0) {
         document.getElementById('c2').style.display = 'none';
@@ -829,10 +851,9 @@ async function selectScene(encoded) {
   setField('fEmoji', scene.emoji || '📍', 'tagEmoji');
   setField('fLocation', scene.location, 'tagLocation');
 
-  // アニメシーン画像（動画サムネ）をセット
+  // アニメシーン画像（Step1で選択済みフレームを優先、なければデフォルトサムネ）
   if (currentYtId) {
-    const thumbUrl = 'https://img.youtube.com/vi/' + currentYtId + '/maxresdefault.jpg';
-    currentAnimeImg = thumbUrl;
+    const thumbUrl = currentAnimeImg || ('https://img.youtube.com/vi/' + currentYtId + '/maxresdefault.jpg');
     showImgComp(thumbUrl);
   }
 
@@ -875,8 +896,15 @@ async function runDirectAnalyze(url, existingTimer) {
     body: JSON.stringify(payload)
   });
   if (existingTimer) clearInterval(existingTimer);
-  if (!res.ok) throw new Error('API ' + res.status);
   const result = await res.json();
+
+  if (res.status === 429 || result.error === 'quota_exceeded') {
+    document.getElementById('c2').style.display = 'none';
+    document.getElementById('cQuotaError').style.display = 'block';
+    setStep(1);
+    return;
+  }
+  if (!res.ok) throw new Error('API ' + res.status);
 
   setField('fWork', result.work, 'tagWork');
   setField('fTitle', result.title, 'tagTitle');
@@ -1147,6 +1175,14 @@ function statusLabel(s) {
     : s === 'confirmed' ? '🟢 確定済み' : '⭐ 公式認定';
 }
 
+function backToStep1() {
+  document.getElementById('cScenes').style.display = 'none';
+  document.getElementById('cQuotaError').style.display = 'none';
+  document.getElementById('c2').style.display = 'none';
+  document.getElementById('c1').style.display = 'block';
+  setStep(1);
+}
+
 function resetForm() {
   document.getElementById('urlInput').value = '';
   document.getElementById('urlBadge').className = 'url-badge';
@@ -1158,6 +1194,7 @@ function resetForm() {
   document.getElementById('imgUploadPreview').style.display = 'none';
   document.getElementById('imgUploadInner').style.display = 'flex';
   document.getElementById('cScenes').style.display = 'none';
+  document.getElementById('cQuotaError').style.display = 'none';
   document.getElementById('sceneList').innerHTML = '';
   currentYtId = null;
   document.getElementById('imgCompCard').style.display = 'none';

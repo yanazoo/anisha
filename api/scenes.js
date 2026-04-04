@@ -51,6 +51,11 @@ JSONのみ返してください。説明文は不要です。`;
     const data = await geminiRes.json();
     console.log('scenes status:', geminiRes.status);
 
+    if (geminiRes.status === 429 || (data.error && (data.error.status === 'RESOURCE_EXHAUSTED' || data.error.code === 429))) {
+      console.log('quota exceeded:', JSON.stringify(data).slice(0, 300));
+      return res.status(429).json({ error: 'quota_exceeded', message: 'Gemini APIのクォータが上限に達しています。しばらく時間をおいてお試しください。' });
+    }
+
     if (!data.candidates || !data.candidates[0]) {
       console.log('no candidates:', JSON.stringify(data).slice(0, 200));
       return res.status(200).json({ scenes: [] });

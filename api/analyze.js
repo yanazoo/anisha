@@ -43,6 +43,9 @@ hdrs[CT] = AJ;
 const geminiR = await fetch(endpoint, { method: POST, headers: hdrs, body: JSON.stringify({ contents: [{ parts: parts }] }) });
 const data = await geminiR.json();
 console.log(geminiR.status);
+if (geminiR.status === 429 || (data.error && (data.error.status === 'RESOURCE_EXHAUSTED' || data.error.code === 429))) {
+return res.status(429).json({ error: 'quota_exceeded', message: 'Gemini APIのクォータが上限に達しています。しばらく時間をおいてお試しください。' });
+}
 if (!data.candidates || data.candidates.length === 0) {
 return res.status(200).json({ work: null, title: null, location: null, ep: null, confidence: 0, candidates: [] });
 }
