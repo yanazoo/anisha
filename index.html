@@ -478,12 +478,30 @@ function selectSpot(id){
   map.flyTo([s.lat,s.lng],15,{duration:0.9});
   if(markers[id])markers[id].openPopup();
   const tagHtml=[s.location&&'<span class="detail-tag">📍 '+s.location+'</span>',s.count&&'<span class="detail-tag">📸 '+s.count.toLocaleString()+'</span>',s.diff&&'<span class="detail-tag">'+s.diff+'</span>',s.ep&&'<span class="detail-tag">'+s.ep+'</span>'].filter(Boolean).join('');
-  document.getElementById('detailEmoji').textContent=s.emoji||'📍';
+  const dAnimeImg=document.getElementById('detailAnimeImg');
+  const dAnimeEmoji=document.getElementById('detailEmoji');
+  if(s.anime_img){dAnimeImg.src=s.anime_img;dAnimeImg.style.display='block';dAnimeEmoji.style.display='none';}
+  else{dAnimeImg.style.display='none';dAnimeEmoji.style.display='flex';}
+  dAnimeEmoji.textContent=s.emoji||'📍';
+  const dRealImg=document.getElementById('detailRealImg');
+  const dRealEmoji=document.getElementById('detailRealEmoji');
+  if(s.real_img){dRealImg.src=s.real_img;dRealImg.style.display='block';dRealEmoji.style.display='none';}
+  else{dRealImg.style.display='none';dRealEmoji.style.display='flex';}
   document.getElementById('detailTitle').textContent=s.title;
   document.getElementById('detailWork').textContent=s.work+(s.ep?' — '+s.ep:'');
   document.getElementById('detailTags').innerHTML=tagHtml;
   document.getElementById('detailPanel').classList.add('show');
   document.getElementById('sheetEmoji').textContent=s.emoji||'📍';
+  const sImgs=document.getElementById('sheetImgs');
+  const sAnimeImg=document.getElementById('sheetAnimeImg');
+  const sRealImg=document.getElementById('sheetRealImg');
+  if(s.anime_img||s.real_img){
+    sImgs.classList.add('show');
+    if(s.anime_img){sAnimeImg.src=s.anime_img;sAnimeImg.parentElement.style.display='block';}
+    else{sAnimeImg.parentElement.style.display='none';}
+    if(s.real_img){sRealImg.src=s.real_img;sRealImg.parentElement.style.display='block';}
+    else{sRealImg.parentElement.style.display='none';}
+  }else{sImgs.classList.remove('show');}
   document.getElementById('sheetTitle').textContent=s.title;
   document.getElementById('sheetWork').textContent=s.work+(s.ep?' — '+s.ep:'');
   document.getElementById('sheetTags').innerHTML=tagHtml.replace(/detail-tag/g,'sheet-tag');
