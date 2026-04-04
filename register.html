@@ -216,13 +216,14 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 .img-url-input{width:100%;height:36px;padding:0 10px;margin-top:6px;background:var(--sky);border:1.5px solid var(--gb);border-radius:8px;color:var(--black);font-family:'Yomogi',cursive;font-size:11px;outline:none;transition:all .2s;}
 .img-url-input:focus{background:var(--white);border-color:var(--sky-dark);}
 .img-url-input::placeholder{color:#aac4d8;}
-.frame-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px;}
-.frame-opt{border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s;background:var(--sky2);position:relative;}
+.frame-picker{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:6px;}
+.frame-opt{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s;background:#000;position:relative;}
 .frame-opt:hover{border-color:var(--sky-dark);}
-.frame-opt.selected{border-color:var(--accent);}
-.frame-opt img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;cursor:zoom-in;}
-.frame-opt-label{font-size:8px;text-align:center;padding:2px 0;color:var(--muted);}
-.frame-opt-zoom{position:absolute;top:3px;right:3px;font-size:9px;background:rgba(0,0,0,0.5);color:#fff;border-radius:3px;padding:1px 4px;pointer-events:none;}
+.frame-opt.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,127,193,0.25);}
+.frame-opt img{width:100%;aspect-ratio:16/9;object-fit:contain;display:block;image-rendering:-webkit-optimize-contrast;}
+.frame-opt-label{font-size:9px;text-align:center;padding:3px 0;color:var(--muted);background:var(--white);}
+.frame-opt-zoom{display:none;}
+.frame-opt-dbtap{position:absolute;top:4px;right:6px;font-size:9px;background:rgba(0,0,0,0.55);color:#fff;border-radius:3px;padding:1px 5px;pointer-events:none;}
 .img-upload-label{display:block;cursor:pointer;border:1.5px dashed var(--gb);border-radius:10px;overflow:hidden;transition:border-color .2s;}
 .img-upload-label:hover{border-color:var(--sky-dark);}
 .img-upload-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px;background:var(--sky);text-align:center;}
@@ -295,11 +296,23 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 
     <!-- Step1 フレーム選択（YouTube URL入力後に表示） -->
     <div id="s1FrameWrap" style="display:none;margin-top:10px">
-      <div style="font-size:11px;color:var(--sky-dark);font-weight:700;margin-bottom:6px">
-        🎬 解析するフレームを選択（アニメシーンが映っているものを選んでください）
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:11px;color:var(--sky-dark);font-weight:700">🎬 解析フレームを選択</div>
+        <div id="videoDuration" style="font-size:11px;color:var(--muted);background:var(--sky2);padding:2px 8px;border-radius:8px">⏱ --:--</div>
       </div>
       <div class="frame-picker" id="s1FrameGrid"></div>
-      <div style="font-size:10px;color:var(--muted);margin-top:2px">🔍アイコンタップで拡大 / 青枠＝解析対象</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">タップで選択 / ダブルタップで拡大（青枠＝解析対象）</div>
+
+      <!-- 時間範囲 -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--sky-dark);font-weight:700;margin-bottom:6px">⏱ 解析する時間範囲（任意）</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="fi" id="analyzeStart" type="text" placeholder="開始 例: 1:30" style="flex:1;height:38px">
+          <span style="color:var(--muted);flex-shrink:0;font-size:13px">〜</span>
+          <input class="fi" id="analyzeEnd" type="text" placeholder="終了 例: 5:00" style="flex:1;height:38px">
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">空欄の場合は動画全体を解析します</div>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
@@ -674,26 +687,79 @@ document.getElementById('urlInput').addEventListener('input', function() {
   }
 });
 
+// ── DOUBLE TAP ──
+const s1TapTimes = {};
+function s1FrameTap(encodedUrl, idx, label) {
+  const now = Date.now();
+  const prev = s1TapTimes[idx] || 0;
+  s1TapTimes[idx] = now;
+  if (now - prev < 380) {
+    s1TapTimes[idx] = 0;
+    openLightbox(decodeURIComponent(encodedUrl), label);
+  } else {
+    selectS1Frame(encodedUrl, idx);
+  }
+}
+
+// ── YOUTUBE DURATION ──
+let ytAPILoaded = false, ytDurPlayer = null, pendingDurVid = null;
+function loadYtAPI() {
+  if (ytAPILoaded) return; ytAPILoaded = true;
+  const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = function() { if (pendingDurVid) fetchYtDuration(pendingDurVid); };
+function fetchYtDuration(vid) {
+  if (!window.YT || !window.YT.Player) { pendingDurVid = vid; loadYtAPI(); return; }
+  pendingDurVid = null;
+  if (ytDurPlayer) { try { ytDurPlayer.destroy(); } catch(e) {} ytDurPlayer = null; }
+  let wrap = document.getElementById('ytDurWrap');
+  if (!wrap) {
+    wrap = document.createElement('div'); wrap.id = 'ytDurWrap';
+    wrap.style.cssText = 'position:fixed;width:1px;height:1px;top:-200px;left:-200px;overflow:hidden;';
+    document.body.appendChild(wrap);
+  }
+  wrap.innerHTML = '<div id="ytDurInner"></div>';
+  ytDurPlayer = new YT.Player('ytDurInner', {
+    width:'1', height:'1', videoId: vid,
+    playerVars: { autoplay:0, controls:0, mute:1 },
+    events: { onReady: function(e) {
+      const dur = e.target.getDuration();
+      if (dur > 0) {
+        const m = Math.floor(dur/60), s = String(Math.floor(dur%60)).padStart(2,'0');
+        const el = document.getElementById('videoDuration');
+        if (el) el.textContent = '⏱ ' + m + ':' + s;
+        const endEl = document.getElementById('analyzeEnd');
+        if (endEl && !endEl.value) endEl.placeholder = '終了 例: ' + m + ':' + s;
+      }
+    }}
+  });
+}
+
 function showS1Frames(url) {
   const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
   if (!ytMatch) return;
   const vid = ytMatch[1];
+  // maxresdefault は高画質、hqdefault は中画質（フレーム1/2/3 は低解像度のため hqdefault 代替表示）
   const frames = [
-    { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg', label: 'フレーム1' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg', label: 'フレーム2' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/3.jpg', label: 'フレーム3' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ（高画質）' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/hqdefault.jpg',     label: 'フレームA' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg',             label: 'フレーム①' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg',             label: 'フレーム②' },
   ];
   const grid = document.getElementById('s1FrameGrid');
   grid.innerHTML = frames.map((f, i) =>
-    '<div class="frame-opt'+(i===0?' selected':'')+'" id="s1f'+i+'" onclick="selectS1Frame(\''+encodeURIComponent(f.url)+'\','+i+')">' +
-    '<img src="'+f.url+'" onerror="this.parentElement.style.display=\'none\'" onclick="event.stopPropagation();openLightbox(\''+f.url+'\',\''+f.label+'\')">' +
-    '<div class="frame-opt-zoom">🔍</div>' +
+    '<div class="frame-opt'+(i===0?' selected':'')+'" id="s1f'+i+'"' +
+    ' onclick="s1FrameTap(\''+encodeURIComponent(f.url)+'\','+i+',\''+f.label+'\')">' +
+    '<img src="'+f.url+'" onerror="this.style.display=\'none\'" loading="eager">' +
+    '<div class="frame-opt-dbtap">ダブルで拡大</div>' +
     '<div class="frame-opt-label">'+f.label+'</div>' +
     '</div>'
   ).join('');
+  document.getElementById('videoDuration').textContent = '⏱ 読み込み中...';
   document.getElementById('s1FrameWrap').style.display = 'block';
   selectS1Frame(encodeURIComponent(frames[0].url), 0);
+  fetchYtDuration(vid);
 }
 
 function selectS1Frame(encodedUrl, idx) {
@@ -778,7 +844,11 @@ async function startAnalyze() {
       const res = await fetch('/api/scenes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({
+          url,
+          startTime: document.getElementById('analyzeStart').value.trim() || null,
+          endTime:   document.getElementById('analyzeEnd').value.trim()   || null
+        })
       });
       clearInterval(timer);
       const data = await res.json();
@@ -1208,6 +1278,9 @@ function resetForm() {
   document.getElementById('framePicker').innerHTML = '';
   document.getElementById('s1FrameWrap').style.display = 'none';
   document.getElementById('s1FrameGrid').innerHTML = '';
+  document.getElementById('analyzeStart').value = '';
+  document.getElementById('analyzeEnd').value = '';
+  document.getElementById('videoDuration').textContent = '⏱ --:--';
   document.getElementById('urlBadge').className = 'url-badge';
   document.getElementById('c4').style.display = 'none';
   document.getElementById('c1').style.display = 'block';

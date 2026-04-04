@@ -8,11 +8,15 @@ const handler = async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'no key' }); return; }
 
-  const { url } = req.body || {};
+  const { url, startTime, endTime } = req.body || {};
   if (!url) { res.status(400).json({ error: 'url required' }); return; }
 
+  const timeRangeNote = (startTime || endTime)
+    ? `\n\n【時間範囲指定】${startTime || '0:00'} 〜 ${endTime || '終了'} の範囲のシーンのみを分析してください。この範囲外のシーンは含めないでください。`
+    : '';
+
   const prompt = `この動画を分析し、アニメ・マンガの聖地巡礼に関係する印象的なシーンを最大5つ特定してください。
-「名シーン」「聖地スポット」「行ってみたいと思わせる場所」を優先してピックアップしてください。
+「名シーン」「聖地スポット」「行ってみたいと思わせる場所」を優先してピックアップしてください。${timeRangeNote}
 
 各シーンについて以下のJSONで返してください：
 {
@@ -32,7 +36,7 @@ const handler = async (req, res) => {
 JSONのみ返してください。説明文は不要です。`;
 
   try {
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=' + apiKey;
 
     const geminiRes = await fetch(endpoint, {
       method: 'POST',
