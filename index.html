@@ -361,12 +361,20 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'�
 L.control.zoom({position:'bottomright'}).addTo(map);
 
 const tagColors={kimi:'#e05a6a',slam:'#2ecc71',tenki:'#7c5cbf',other:'#e6a817'};
+const statusStyle={
+  unconfirmed:{opacity:'0.45',border:'2px dashed rgba(255,255,255,0.6)',extra:''},
+  discussing:{opacity:'1',border:'2.5px solid #f59e0b',extra:'box-shadow:0 0 0 3px rgba(245,158,11,0.35),0 3px 10px rgba(0,0,0,0.2);'},
+  confirmed:{opacity:'1',border:'2.5px solid rgba(255,255,255,0.9)',extra:''},
+  official:{opacity:'1',border:'2.5px solid #fbbf24',extra:'box-shadow:0 0 0 3px rgba(251,191,36,0.5),0 3px 10px rgba(0,0,0,0.2);'},
+};
 let allSpots=[],filteredSpots=[],markers={},currentSpot=null,drawerOpen=false,menuOpen=false;
 
-function makeIcon(emoji,tag){
+function makeIcon(emoji,tag,status){
   const c=tagColors[tag]||'#888';
+  const st=statusStyle[status]||statusStyle.confirmed;
+  const badge=status==='official'?'<div style="position:absolute;top:-4px;right:-4px;font-size:9px;line-height:1">⭐</div>':'';
   return L.divIcon({className:'',
-    html:'<div class="pin-wrap"><div class="pin-head" style="background:'+c+'"><span>'+(emoji||'📍')+'</span></div><div class="pin-tail"></div></div>',
+    html:'<div class="pin-wrap" style="opacity:'+st.opacity+'"><div class="pin-head" style="position:relative;background:'+c+';border:'+st.border+';'+st.extra+'"><span>'+(emoji||'📍')+'</span>'+badge+'</div><div class="pin-tail"></div></div>',
     iconSize:[34,43],iconAnchor:[17,43],popupAnchor:[0,-47]});
 }
 
@@ -416,7 +424,7 @@ function menuSearch(q){
 function renderMarkers(spots){
   Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
   spots.forEach(s=>{
-    const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag)}).addTo(map)
+    const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag,s.status)}).addTo(map)
       .bindPopup('<div class="popup-body"><div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><button class="popup-cta" onclick="selectSpot(\''+s.id+'\')">詳細を見る →</button></div>',{maxWidth:230})
       .on('click',()=>selectSpot(s.id));
     markers[s.id]=m;
