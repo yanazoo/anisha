@@ -217,14 +217,20 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 .img-url-input:focus{background:var(--white);border-color:var(--sky-dark);}
 .img-url-input::placeholder{color:#aac4d8;}
 .frame-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px;}
-.frame-opt{border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s;background:var(--sky2);}
+.frame-opt{border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s;background:var(--sky2);position:relative;}
 .frame-opt:hover{border-color:var(--sky-dark);}
 .frame-opt.selected{border-color:var(--accent);}
-.frame-opt img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
+.frame-opt img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;cursor:zoom-in;}
 .frame-opt-label{font-size:8px;text-align:center;padding:2px 0;color:var(--muted);}
+.frame-opt-zoom{position:absolute;top:3px;right:3px;font-size:9px;background:rgba(0,0,0,0.5);color:#fff;border-radius:3px;padding:1px 4px;pointer-events:none;}
 .img-upload-label{display:block;cursor:pointer;border:1.5px dashed var(--gb);border-radius:10px;overflow:hidden;transition:border-color .2s;}
 .img-upload-label:hover{border-color:var(--sky-dark);}
 .img-upload-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px;background:var(--sky);text-align:center;}
+.lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.lightbox.show{opacity:1;pointer-events:all;}
+.lightbox-img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:10px;}
+.lightbox-close{position:absolute;top:14px;right:18px;color:#fff;font-size:32px;cursor:pointer;line-height:1;}
+.lightbox-label{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:11px;white-space:nowrap;}
 </style>
 
 </head>
@@ -269,9 +275,18 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
       placeholder="YouTube / Instagram / X / TikTok のURL">
     <div class="url-badge" id="urlBadge"></div>
 
-    <div style="display:flex;align-items:center;gap:8px;margin:10px 0 8px">
+    <!-- Step1 フレーム選択（YouTube URL入力後に表示） -->
+    <div id="s1FrameWrap" style="display:none;margin-top:10px">
+      <div style="font-size:11px;color:var(--sky-dark);font-weight:700;margin-bottom:6px">
+        🎬 解析するフレームを選択（アニメシーンが映っているものを選んでください）
+      </div>
+      <div class="frame-picker" id="s1FrameGrid"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">🔍アイコンタップで拡大 / 青枠＝解析対象</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0 8px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
-      <div style="font-size:11px;color:var(--muted)">または</div>
+      <div style="font-size:11px;color:var(--muted)">または直接アップロード</div>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
 
@@ -282,7 +297,7 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
         <div style="font-size:13px;font-weight:700">スクショ・写真から解析</div>
         <div style="font-size:10px;color:var(--muted)">アニメシーンや現地写真をアップロード</div>
       </div>
-      <img id="imgUploadPreview" style="display:none;width:100%;border-radius:8px;object-fit:cover;max-height:140px">
+      <img id="imgUploadPreview" style="display:none;width:100%;border-radius:8px;object-fit:cover;max-height:140px;cursor:zoom-in" onclick="event.preventDefault();openLightbox(this.src,'アップロード画像')">
     </label>
 
     <button class="analyze-btn" id="analyzeBtn" onclick="startAnalyze()" style="margin-top:10px">
@@ -354,14 +369,14 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
   <div class="img-comp">
     <div class="img-comp-item">
       <div class="img-comp-label">🎬 アニメシーン</div>
-      <img class="img-comp-thumb" id="animeImgThumb" src="" alt="" style="display:none">
+      <img class="img-comp-thumb" id="animeImgThumb" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src,'アニメシーン')">
       <div class="img-comp-placeholder" id="animeImgPlaceholder">🎬<span>フレームを選択</span></div>
       <div class="frame-picker" id="framePicker" style="display:none"></div>
       <input class="img-url-input" id="fAnimeImg" type="url" placeholder="アニメシーン画像URL（直接貼付も可）" oninput="onAnimeImgInput(this.value)">
     </div>
     <div class="img-comp-item">
       <div class="img-comp-label">📍 現地写真</div>
-      <img class="img-comp-thumb" id="realImgThumb" src="" alt="" style="display:none">
+      <img class="img-comp-thumb" id="realImgThumb" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src,'現地写真')">
       <div class="img-comp-placeholder" id="realImgPlaceholder">🗾<span>URL貼付で表示</span></div>
       <input class="img-url-input" id="fRealImg" type="url" placeholder="現地写真のURLを貼り付け" oninput="onRealImgInput(this.value)">
     </div>
@@ -564,6 +579,12 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 
 <div class="toast" id="toast"></div>
 
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="" onclick="event.stopPropagation()">
+  <div class="lightbox-label" id="lightboxLabel"></div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://zzpfnszijxkfxtietilr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cGZuc3ppanhrZnh0aWV0aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTI2MzMsImV4cCI6MjA5MDU4ODYzM30.gqVLopJ3kveG1YwAcF6LQ7GFS2tZ0VRlHAG7M4je2Z0';
@@ -584,18 +605,66 @@ function switchTab(tab) {
   if (tab === 'edit') loadSpots();
 }
 
+// ── LIGHTBOX ──
+function openLightbox(url, label) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightboxLabel').textContent = label || '';
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+}
+
 // ── URL INPUT ──
 document.getElementById('urlInput').addEventListener('input', function() {
   const val = this.value.trim();
   const badge = document.getElementById('urlBadge');
-  if (val.includes('youtube.com') || val.includes('youtu.be')) {
+  const isYt = val.includes('youtube.com') || val.includes('youtu.be');
+  if (isYt) {
     badge.textContent = '▶ YouTube'; badge.className = 'url-badge show youtube';
+    showS1Frames(val);
   } else if (val.length > 0) {
     badge.textContent = '🔗 URL'; badge.className = 'url-badge show other';
+    document.getElementById('s1FrameWrap').style.display = 'none';
   } else {
     badge.className = 'url-badge';
+    document.getElementById('s1FrameWrap').style.display = 'none';
   }
 });
+
+function showS1Frames(url) {
+  const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
+  if (!ytMatch) return;
+  const vid = ytMatch[1];
+  const frames = [
+    { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg', label: 'フレーム1' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg', label: 'フレーム2' },
+    { url: 'https://img.youtube.com/vi/'+vid+'/3.jpg', label: 'フレーム3' },
+  ];
+  const grid = document.getElementById('s1FrameGrid');
+  grid.innerHTML = frames.map((f, i) =>
+    '<div class="frame-opt'+(i===0?' selected':'')+'" id="s1f'+i+'" onclick="selectS1Frame(\''+encodeURIComponent(f.url)+'\','+i+')">' +
+    '<img src="'+f.url+'" onerror="this.parentElement.style.display=\'none\'" onclick="event.stopPropagation();openLightbox(\''+f.url+'\',\''+f.label+'\')">' +
+    '<div class="frame-opt-zoom">🔍</div>' +
+    '<div class="frame-opt-label">'+f.label+'</div>' +
+    '</div>'
+  ).join('');
+  document.getElementById('s1FrameWrap').style.display = 'block';
+  selectS1Frame(encodeURIComponent(frames[0].url), 0);
+}
+
+function selectS1Frame(encodedUrl, idx) {
+  const url = decodeURIComponent(encodedUrl);
+  document.querySelectorAll('#s1FrameGrid .frame-opt').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+  currentAnimeImg = url;
+  uploadedImageBase64 = null;
+  uploadedImageMime = null;
+  document.getElementById('imgUploadPreview').style.display = 'none';
+  document.getElementById('imgUploadInner').style.display = 'flex';
+}
 
 // ── STEPS ──
 function setStep(n) {
@@ -660,15 +729,21 @@ async function startAnalyze() {
   try {
     let imageUrl = null;
     const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
-    if (ytMatch) imageUrl = 'https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg';
+    if (ytMatch) {
+      // ユーザーがStep1で選んだフレームを優先、なければmaxresdefault
+      imageUrl = currentAnimeImg || ('https://img.youtube.com/vi/' + ytMatch[1] + '/maxresdefault.jpg');
+    }
     if (!uploadedImageBase64) currentAnimeImg = imageUrl;
 
-    const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。この画像または投稿URLから聖地情報をJSONで返してください。' +
-      '重要なルール: ' +
-      '1. 場所が特定できない場合はlocationをnullにする（「動画参照」などは禁止）。' +
-      '2. candidatesは実際の地名・住所がある場合のみ返す（不明な場合は空配列）。' +
-      '3. 確信度が50%未満の場合はnullを返す。' +
-      'キー: work(作品名), title(スポット名), location(実際の住所か地名、不明ならnull), ep(エピソード), emoji(絵文字1文字), confidence(確信度0-100), candidates([{name:地名,location:住所,confidence}]最大3件)。JSONのみ。';
+    const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。提供された画像やURLを分析し、アニメ・マンガ作品の聖地情報をJSONで返してください。\n' +
+      '【重要ルール】\n' +
+      '1. 画像に映っている場所・風景・ランドマーク・看板・建物・背景を詳しく観察し、実在の住所・地名を特定してください。\n' +
+      '2. 部分的にでも場所が推測できれば確信度とともに候補として返してください（完全に不明な場合のみnull）。\n' +
+      '3. candidatesには確信度30%以上の候補をすべて列挙（最大3件）。\n' +
+      '4. 作品名が特定できなくても場所情報だけ返してください。\n' +
+      '【出力形式】JSONのみ（説明文不要）:\n' +
+      '{"work":"作品名またはnull","title":"スポット名","location":"都道府県から始まる住所または著名地名、不明ならnull","ep":"エピソードまたはnull","emoji":"場所を表す絵文字1文字","confidence":確信度0〜100,"candidates":[{"name":"候補地名","location":"住所","confidence":確信度}]}\n' +
+      '例: {"work":"君の名は。","title":"須賀神社 階段","location":"東京都新宿区須賀町","ep":"エンディング","emoji":"⛩️","confidence":92,"candidates":[{"name":"須賀神社","location":"東京都新宿区須賀町1-5","confidence":92}]}';
 
     const payload = { prompt, url };
     if (uploadedImageBase64) {
@@ -732,7 +807,8 @@ function showImgComp(animeUrl) {
     picker.style.display = 'grid';
     picker.innerHTML = frames.map((f, i) =>
       '<div class="frame-opt'+(i===0?' selected':'')+'" onclick="pickAnimeFrame(\''+encodeURIComponent(f.url)+'\',this)">' +
-      '<img src="'+f.url+'" onerror="this.parentElement.style.display=\'none\'">' +
+      '<img src="'+f.url+'" onerror="this.parentElement.style.display=\'none\'" onclick="event.stopPropagation();openLightbox(\''+f.url+'\',\''+f.label+'\')">' +
+      '<div class="frame-opt-zoom">🔍</div>' +
       '<div class="frame-opt-label">'+f.label+'</div>' +
       '</div>'
     ).join('');
@@ -989,6 +1065,9 @@ function resetForm() {
   document.getElementById('realImgPlaceholder').style.display = 'flex';
   document.getElementById('framePicker').style.display = 'none';
   document.getElementById('framePicker').innerHTML = '';
+  document.getElementById('s1FrameWrap').style.display = 'none';
+  document.getElementById('s1FrameGrid').innerHTML = '';
+  document.getElementById('urlBadge').className = 'url-badge';
   document.getElementById('c4').style.display = 'none';
   document.getElementById('c1').style.display = 'block';
   setStep(1);
