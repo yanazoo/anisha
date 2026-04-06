@@ -918,11 +918,22 @@ async function runDirectAnalyze(url, existingTimer) {
   }
   if (!uploadedImageBase64) currentAnimeImg = imageUrl;
 
-  const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。学習済みのアニメ・マンガ聖地に関する知識（ロケ地データベース・公式情報・ファンWiki・巡礼レポート等）と、提供された画像・URLを組み合わせて分析してください。\n' +
+  // YouTube動画タイトルを取得（作品名ヒント）
+  let videoTitle = '';
+  if (currentYtId) {
+    try {
+      const oe = await fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + currentYtId + '&format=json');
+      if (oe.ok) { const oed = await oe.json(); videoTitle = oed.title || ''; }
+    } catch(e) {}
+  }
+
+  const titleHint = videoTitle ? '【動画タイトル】' + videoTitle + '\n' : '';
+  const prompt = titleHint +
+    'あなたはアニメ・マンガの聖地巡礼専門家です。学習済みのアニメ・マンガ聖地に関する知識（ロケ地データベース・公式情報・ファンWiki・巡礼レポート等）と、提供された画像・URLを組み合わせて分析してください。\n' +
     '【分析手順】\n' +
-    '1. 画像に映っている風景・建物・看板・地形・背景の特徴を詳しく観察する。\n' +
-    '2. その視覚情報と、アニメ・マンガのロケ地として知られている実在の場所の知識を照合する。\n' +
-    '3. URLや動画タイトルに作品名・エピソード情報があれば優先的に活用する。\n' +
+    '1. 動画タイトルがあれば、まず作品名・エピソード・登場場所の特定に活用する。\n' +
+    '2. 画像に映っている風景・建物・看板・地形・背景の特徴を詳しく観察する。\n' +
+    '3. その視覚情報と、アニメ・マンガのロケ地として知られている実在の場所の知識を照合する。\n' +
     '4. 神社・駅・橋・商店街・学校など特徴的な建物や構造物は積極的に固有名詞で特定する。\n' +
     '5. 背景の山・海・川・建物の配置から都道府県レベルの絞り込みも行う。\n' +
     '【重要ルール】\n' +
