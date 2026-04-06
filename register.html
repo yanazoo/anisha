@@ -224,6 +224,7 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 .frame-opt-label{font-size:9px;text-align:center;padding:3px 0;color:var(--muted);background:var(--white);}
 .frame-opt-zoom{display:none;}
 .frame-opt-dbtap{position:absolute;top:4px;right:6px;font-size:9px;background:rgba(0,0,0,0.55);color:#fff;border-radius:3px;padding:1px 5px;pointer-events:none;}
+.frame-time-badge{position:absolute;bottom:20px;left:5px;font-size:9px;background:rgba(0,0,0,0.65);color:#fff;border-radius:3px;padding:1px 5px;pointer-events:none;font-weight:700;letter-spacing:.3px;}
 .img-upload-label{display:block;cursor:pointer;border:1.5px dashed var(--gb);border-radius:10px;overflow:hidden;transition:border-color .2s;}
 .img-upload-label:hover{border-color:var(--sky-dark);}
 .img-upload-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px;background:var(--sky);text-align:center;}
@@ -444,7 +445,7 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
   <div class="card-title">🎬 シーン比較</div>
   <div class="img-comp">
     <div class="img-comp-item">
-      <div class="img-comp-label">🎬 解析したシーン</div>
+      <div class="img-comp-label">🎬 解析したシーン <span id="compAnimeTime" style="font-weight:400;opacity:.7;font-size:10px"></span></div>
       <img class="img-comp-thumb" id="compAnimeImg" src="" style="cursor:zoom-in" onclick="openLightbox(this.src,'アニメシーン')">
     </div>
     <div class="img-comp-item">
@@ -697,6 +698,29 @@ document.getElementById('urlInput').addEventListener('input', function() {
   }
 });
 
+// ── 開始時間入力 → 最寄りフレーム自動選択 ──
+function parseTimeInput(val) {
+  if (!val) return NaN;
+  const parts = val.split(':');
+  if (parts.length === 2) return parseInt(parts[0])*60 + parseInt(parts[1]);
+  return parseInt(parts[0]);
+}
+document.getElementById('analyzeStart').addEventListener('change', function() {
+  const sec = parseTimeInput(this.value.trim());
+  if (isNaN(sec) || videoDurationSec <= 0) return;
+  // 確信度のある最も近いフレームを選択（pct=nullのサムネはスキップ）
+  let bestIdx = -1, bestDiff = Infinity;
+  s1FrameData.forEach((f, i) => {
+    if (f.pct === null) return;
+    const diff = Math.abs(f.pct * videoDurationSec - sec);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  });
+  if (bestIdx >= 0) {
+    selectS1Frame(encodeURIComponent(s1FrameData[bestIdx].url), bestIdx);
+    currentFrameTime = sec; // 入力した正確な時刻を優先
+  }
+});
+
 // ── DOUBLE TAP ──
 const s1TapTimes = {};
 function s1FrameTap(encodedUrl, idx, label) {
@@ -736,39 +760,57 @@ function fetchYtDuration(vid) {
     events: { onReady: function(e) {
       const dur = e.target.getDuration();
       if (dur > 0) {
+        videoDurationSec = dur;
         const m = Math.floor(dur/60), s = String(Math.floor(dur%60)).padStart(2,'0');
         const el = document.getElementById('videoDuration');
         if (el) el.textContent = '⏱ ' + m + ':' + s;
         const endEl = document.getElementById('analyzeEnd');
         if (endEl && !endEl.value) endEl.placeholder = '終了 例: ' + m + ':' + s;
+        // フレームタイムバッジ更新
+        s1FrameData.forEach((f, i) => {
+          const badge = document.getElementById('ftb'+i);
+          if (badge) badge.textContent = s1TimeBadge(f, dur);
+        });
       }
     }}
   });
+}
+
+function s1TimeBadge(f, dur) {
+  if (f.pct === null) return 'サムネ';
+  if (dur <= 0) return '読込中...';
+  const sec = Math.floor(f.pct * dur);
+  return '▶ ' + String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
+}
+
+function renderFrameGrid() {
+  const grid = document.getElementById('s1FrameGrid');
+  grid.innerHTML = s1FrameData.map((f, i) =>
+    '<div class="frame-opt'+(i===0?' selected':'')+'" id="s1f'+i+'"' +
+    ' onclick="s1FrameTap(\''+encodeURIComponent(f.url)+'\','+i+',\''+f.label+'\')">' +
+    '<img src="'+f.url+'" onerror="this.closest(\'.frame-opt\').style.display=\'none\'" loading="eager">' +
+    '<div class="frame-opt-dbtap">ダブルで拡大</div>' +
+    '<div class="frame-time-badge" id="ftb'+i+'">'+s1TimeBadge(f, videoDurationSec)+'</div>' +
+    '<div class="frame-opt-label">'+f.label+'</div>' +
+    '</div>'
+  ).join('');
 }
 
 function showS1Frames(url) {
   const ytMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
   if (!ytMatch) return;
   const vid = ytMatch[1];
-  // maxresdefault は高画質、hqdefault は中画質（フレーム1/2/3 は低解像度のため hqdefault 代替表示）
-  const frames = [
-    { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ（高画質）' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/hqdefault.jpg',     label: 'フレームA' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg',             label: 'フレーム①' },
-    { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg',             label: 'フレーム②' },
+  videoDurationSec = 0; currentFrameTime = null;
+  s1FrameData = [
+    { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ', pct: null },
+    { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg',  label: 'フレームA', pct: 0.25 },
+    { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg',  label: 'フレームB', pct: 0.50 },
+    { url: 'https://img.youtube.com/vi/'+vid+'/3.jpg',  label: 'フレームC', pct: 0.75 },
   ];
-  const grid = document.getElementById('s1FrameGrid');
-  grid.innerHTML = frames.map((f, i) =>
-    '<div class="frame-opt'+(i===0?' selected':'')+'" id="s1f'+i+'"' +
-    ' onclick="s1FrameTap(\''+encodeURIComponent(f.url)+'\','+i+',\''+f.label+'\')">' +
-    '<img src="'+f.url+'" onerror="this.style.display=\'none\'" loading="eager">' +
-    '<div class="frame-opt-dbtap">ダブルで拡大</div>' +
-    '<div class="frame-opt-label">'+f.label+'</div>' +
-    '</div>'
-  ).join('');
+  renderFrameGrid();
   document.getElementById('videoDuration').textContent = '⏱ 読み込み中...';
   document.getElementById('s1FrameWrap').style.display = 'block';
-  selectS1Frame(encodeURIComponent(frames[0].url), 0);
+  selectS1Frame(encodeURIComponent(s1FrameData[0].url), 0);
   fetchYtDuration(vid);
 }
 
@@ -782,6 +824,10 @@ function selectS1Frame(encodedUrl, idx) {
   uploadedImageMime = null;
   document.getElementById('imgUploadPreview').style.display = 'none';
   document.getElementById('imgUploadInner').style.display = 'flex';
+  // 選択フレームの時刻を記録
+  const f = s1FrameData[idx];
+  currentFrameTime = (f && f.pct !== null && videoDurationSec > 0)
+    ? Math.floor(f.pct * videoDurationSec) : null;
 }
 
 // ── STEPS ──
@@ -827,6 +873,9 @@ const analyzeSteps = [
 ];
 
 let currentYtId = null;
+let s1FrameData = [];
+let videoDurationSec = 0;
+let currentFrameTime = null; // 選択フレームの秒数
 
 async function startAnalyze() {
   const url = document.getElementById('urlInput').value.trim();
@@ -928,7 +977,13 @@ async function runDirectAnalyze(url, existingTimer) {
   }
 
   const titleHint = videoTitle ? '【動画タイトル】' + videoTitle + '\n' : '';
-  const prompt = titleHint +
+  let timeHint = '';
+  if (currentFrameTime !== null) {
+    const mm = String(Math.floor(currentFrameTime/60)).padStart(2,'0');
+    const ss = String(currentFrameTime%60).padStart(2,'0');
+    timeHint = '【解析フレーム時刻】動画の ' + mm + ':' + ss + ' 付近のシーンです。この時刻のエピソード・場面情報も活用してください。\n';
+  }
+  const prompt = titleHint + timeHint +
     'あなたはアニメ・マンガの聖地巡礼専門家です。学習済みのアニメ・マンガ聖地に関する知識（ロケ地データベース・公式情報・ファンWiki・巡礼レポート等）と、提供された画像・URLを組み合わせて分析してください。\n' +
     '【分析手順】\n' +
     '1. 動画タイトルがあれば、まず作品名・エピソード・登場場所の特定に活用する。\n' +
@@ -1019,6 +1074,17 @@ function showImgComp(animeUrl) {
   document.getElementById('fAnimeImg').value = url;
   currentAnimeImg = url;
   setAnimeThumb(url);
+  // タイムスタンプ表示
+  const timeEl = document.getElementById('compAnimeTime');
+  if (timeEl) {
+    if (currentFrameTime !== null) {
+      const mm = String(Math.floor(currentFrameTime/60)).padStart(2,'0');
+      const ss = String(currentFrameTime%60).padStart(2,'0');
+      timeEl.textContent = '▶ ' + mm + ':' + ss;
+    } else {
+      timeEl.textContent = '';
+    }
+  }
   document.getElementById('sceneCompCard').style.display = 'block';
 }
 
@@ -1298,20 +1364,16 @@ function resetForm() {
   document.getElementById('realPhotosCard').style.display = 'none';
   document.getElementById('realPhotosList').innerHTML = '';
   currentYtId = null;
-  document.getElementById('imgCompCard').style.display = 'none';
+  videoDurationSec = 0; currentFrameTime = null; s1FrameData = [];
+  document.getElementById('sceneCompCard').style.display = 'none';
   document.getElementById('fAnimeImg').value = '';
   document.getElementById('fRealImg').value = '';
-  document.getElementById('animeImgThumb').style.display = 'none';
-  document.getElementById('animeImgPlaceholder').style.display = 'flex';
-  document.getElementById('realImgThumb').style.display = 'none';
-  document.getElementById('realImgPlaceholder').style.display = 'flex';
-  document.getElementById('sceneCompCard').style.display = 'none';
   document.getElementById('compAnimeImg').src = '';
   document.getElementById('compRealImg').src = '';
   document.getElementById('compRealImg').style.display = 'none';
   document.getElementById('compRealPlaceholder').style.display = 'flex';
-  document.getElementById('fAnimeImg').value = '';
-  document.getElementById('fRealImg').value = '';
+  const timeEl = document.getElementById('compAnimeTime');
+  if (timeEl) timeEl.textContent = '';
   document.getElementById('s1FrameWrap').style.display = 'none';
   document.getElementById('s1FrameGrid').innerHTML = '';
   document.getElementById('analyzeStart').value = '';
