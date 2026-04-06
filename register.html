@@ -698,28 +698,127 @@ document.getElementById('urlInput').addEventListener('input', function() {
   }
 });
 
-// ── 開始時間入力 → 最寄りフレーム自動選択 ──
+// ── 開始時間入力 → 指定時刻フレーム取得 ──
 function parseTimeInput(val) {
   if (!val) return NaN;
   const parts = val.split(':');
   if (parts.length === 2) return parseInt(parts[0])*60 + parseInt(parts[1]);
   return parseInt(parts[0]);
 }
-document.getElementById('analyzeStart').addEventListener('change', function() {
-  const sec = parseTimeInput(this.value.trim());
-  if (isNaN(sec) || videoDurationSec <= 0) return;
-  // 確信度のある最も近いフレームを選択（pct=nullのサムネはスキップ）
-  let bestIdx = -1, bestDiff = Infinity;
+
+let fetchFrameTimer = null;
+document.getElementById('analyzeStart').addEventListener('input', function() {
+  clearTimeout(fetchFrameTimer);
+  const val = this.value.trim();
+  const sec = parseTimeInput(val);
+  if (isNaN(sec) || sec < 0) return;
+  fetchFrameTimer = setTimeout(() => fetchFrameAtTime(sec), 600);
+});
+
+async function fetchFrameAtTime(sec) {
+  if (!currentYtId) return;
+  // 最寄り静的フレームを暫定選択
+  let bestIdx = 0, bestDiff = Infinity;
   s1FrameData.forEach((f, i) => {
     if (f.pct === null) return;
     const diff = Math.abs(f.pct * videoDurationSec - sec);
     if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
   });
-  if (bestIdx >= 0) {
-    selectS1Frame(encodeURIComponent(s1FrameData[bestIdx].url), bestIdx);
-    currentFrameTime = sec; // 入力した正確な時刻を優先
+  selectS1Frame(encodeURIComponent(s1FrameData[bestIdx].url), bestIdx);
+  currentFrameTime = sec;
+
+  // カスタムフレームカードを「取得中」に更新
+  const CUSTOM_IDX = 4;
+  ensureCustomFrameSlot('⏳ 取得中...', null);
+
+  try {
+    const r = await fetch('/api/frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: currentYtId, seconds: sec })
+    });
+    const data = await r.json();
+
+    if (data.imageBase64) {
+      // sharpでcrop済みのbase64画像
+      const dataUrl = 'data:' + data.mime + ';base64,' + data.imageBase64;
+      setCustomFrame(dataUrl, sec, data.imageBase64, data.mime);
+    } else if (data.spriteUrl && data.crop) {
+      // canvas でcrop（sharp未使用のフォールバック）
+      cropSpriteCanvas(data.spriteUrl, data.crop, sec);
+    } else {
+      ensureCustomFrameSlot('⚠️ 取得失敗', null);
+    }
+  } catch(e) {
+    console.error('frame fetch error:', e);
+    ensureCustomFrameSlot('⚠️ 取得失敗', null);
   }
-});
+}
+
+function ensureCustomFrameSlot(label, imgUrl) {
+  const CUSTOM_IDX = 4;
+  const grid = document.getElementById('s1FrameGrid');
+  let slot = document.getElementById('s1f' + CUSTOM_IDX);
+  const mm = currentFrameTime !== null ? String(Math.floor(currentFrameTime/60)).padStart(2,'0') + ':' + String(currentFrameTime%60).padStart(2,'0') : '--:--';
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.id = 's1f' + CUSTOM_IDX;
+    slot.className = 'frame-opt';
+    grid.appendChild(slot);
+  }
+  const eu = imgUrl ? encodeURIComponent(imgUrl) : '';
+  slot.onclick = imgUrl ? function() { s1FrameTap(eu, CUSTOM_IDX, '▶ '+mm); } : null;
+  slot.innerHTML =
+    '<img src="'+(imgUrl||'')+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:'+(imgUrl?'block':'none')+';background:#111">' +
+    '<div style="width:100%;aspect-ratio:16/9;background:#222;display:'+(imgUrl?'none':'flex')+';align-items:center;justify-content:center;color:#888;font-size:11px">'+label+'</div>' +
+    '<div class="frame-time-badge">▶ '+mm+'</div>' +
+    '<div class="frame-opt-label">指定時刻フレーム</div>';
+}
+
+function setCustomFrame(dataUrl, sec, b64, mime) {
+  const CUSTOM_IDX = 4;
+  const mm = String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
+  // s1FrameDataを更新
+  if (s1FrameData.length > CUSTOM_IDX) s1FrameData[CUSTOM_IDX] = { url: dataUrl, label: '▶'+mm, pct: null };
+  else s1FrameData.push({ url: dataUrl, label: '▶'+mm, pct: null });
+
+  const eu = encodeURIComponent(dataUrl);
+  const slot = document.getElementById('s1f' + CUSTOM_IDX);
+  if (slot) {
+    slot.onclick = function() { s1FrameTap(eu, CUSTOM_IDX, '▶ '+mm); };
+    slot.innerHTML =
+      '<img src="'+dataUrl+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#111" onclick="event.stopPropagation()">' +
+      '<div class="frame-opt-dbtap">ダブルで拡大</div>' +
+      '<div class="frame-time-badge">▶ '+mm+'</div>' +
+      '<div class="frame-opt-label">指定時刻フレーム</div>';
+    // 自動選択
+    document.querySelectorAll('#s1FrameGrid .frame-opt').forEach((el, i) => el.classList.toggle('selected', i === CUSTOM_IDX));
+    slot.classList.add('selected');
+    // uploadedImageBase64として設定（このフレームで解析）
+    uploadedImageBase64 = b64;
+    uploadedImageMime = mime;
+    currentAnimeImg = dataUrl;
+    currentFrameTime = sec;
+  }
+}
+
+function cropSpriteCanvas(spriteUrl, crop, sec) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.w; canvas.height = crop.h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const b64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+    setCustomFrame(dataUrl, sec, b64, 'image/jpeg');
+  };
+  img.onerror = function() {
+    ensureCustomFrameSlot('⚠️ 画像取得失敗', null);
+  };
+  img.src = spriteUrl;
+}
 
 // ── DOUBLE TAP ──
 const s1TapTimes = {};
@@ -801,6 +900,8 @@ function showS1Frames(url) {
   if (!ytMatch) return;
   const vid = ytMatch[1];
   videoDurationSec = 0; currentFrameTime = null;
+  document.getElementById('analyzeStart').value = '';
+  document.getElementById('analyzeEnd').value = '';
   s1FrameData = [
     { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ', pct: null },
     { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg',  label: 'フレームA', pct: 0.25 },
