@@ -555,8 +555,27 @@ setTimeout(async()=>{
     renderMarkers(filteredSpots);
     renderDrawerList(filteredSpots);
     renderMenu(allSpots);
-    map.flyToBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])),{padding:[60,80],duration:1.4});
-    hideSplash();
+
+    // 登録後のズームイン（?zLat=&zLng= が付いている場合）
+    const _p = new URLSearchParams(location.search);
+    const _zLat = parseFloat(_p.get('zLat'));
+    const _zLng = parseFloat(_p.get('zLng'));
+    if (_zLat && _zLng) {
+      // まず全体を表示してからズームイン
+      map.fitBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])),{padding:[60,80]});
+      hideSplash();
+      setTimeout(()=>{
+        map.flyTo([_zLat, _zLng], 16, {duration:2.2});
+        // ピンのポップアップを開く
+        setTimeout(()=>{
+          const target = allSpots.find(s=>Math.abs(s.lat-_zLat)<0.0002&&Math.abs(s.lng-_zLng)<0.0002);
+          if(target && markers[target.id]) markers[target.id].openPopup();
+        }, 2400);
+      }, 800);
+    } else {
+      map.flyToBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])),{padding:[60,80],duration:1.4});
+      hideSplash();
+    }
     setTimeout(()=>showToast('✓ '+allSpots.length+'件の聖地を発見！'),600);
   }catch(e){
     console.error(e);

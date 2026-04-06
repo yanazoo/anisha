@@ -418,26 +418,9 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
   </div>
 </div>
 
-<!-- 画像比較 -->
-<div class="card" id="imgCompCard" style="display:none">
-  <div class="card-title">🎬 シーン比較</div>
-  <div class="img-comp">
-    <div class="img-comp-item">
-      <div class="img-comp-label">🎬 アニメシーン</div>
-      <img class="img-comp-thumb" id="animeImgThumb" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src,'アニメシーン')">
-      <div class="img-comp-placeholder" id="animeImgPlaceholder">🎬<span>フレームを選択</span></div>
-      <div class="frame-picker" id="framePicker" style="display:none"></div>
-      <input class="img-url-input" id="fAnimeImg" type="url" placeholder="アニメシーン画像URL（直接貼付も可）" oninput="onAnimeImgInput(this.value)">
-    </div>
-    <div class="img-comp-item">
-      <div class="img-comp-label">📍 現地写真</div>
-      <img class="img-comp-thumb" id="realImgThumb" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src,'現地写真')">
-      <div class="img-comp-placeholder" id="realImgPlaceholder">🗾<span>URL貼付で表示</span></div>
-      <input class="img-url-input" id="fRealImg" type="url" placeholder="現地写真のURLを貼り付け" oninput="onRealImgInput(this.value)">
-    </div>
-  </div>
-  <div style="font-size:10px;color:var(--muted);margin-top:4px">フレームをタップして選択、またはアニメシーンの画像URLを直接貼り付けてください。</div>
-</div>
+<!-- 非表示入力（anime/real img URL保持用） -->
+<input type="hidden" id="fAnimeImg">
+<input type="hidden" id="fRealImg">
 
 <!-- 解析ステータス（場所不明時） -->
 <div id="analyzeStatusCard" style="display:none;margin-bottom:14px"></div>
@@ -451,9 +434,25 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 <!-- 現地写真候補 -->
 <div class="card" id="realPhotosCard" style="display:none">
   <div class="card-title">📸 現地写真候補</div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">周辺スポットの写真です。タップで現地写真として選択 / ダブルタップで拡大</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">周辺スポットの写真です。タップで選択 / ダブルタップで拡大</div>
   <div id="realPhotosList" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch"></div>
   <div style="font-size:10px;color:var(--muted);margin-top:6px">出典: Wikipedia / Wikimedia Commons</div>
+</div>
+
+<!-- シーン比較（解析フレーム ↔ 現地写真） -->
+<div class="card" id="sceneCompCard" style="display:none">
+  <div class="card-title">🎬 シーン比較</div>
+  <div class="img-comp">
+    <div class="img-comp-item">
+      <div class="img-comp-label">🎬 解析したシーン</div>
+      <img class="img-comp-thumb" id="compAnimeImg" src="" style="cursor:zoom-in" onclick="openLightbox(this.src,'アニメシーン')">
+    </div>
+    <div class="img-comp-item">
+      <div class="img-comp-label">📍 現地写真</div>
+      <img class="img-comp-thumb" id="compRealImg" src="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src,'現地写真')">
+      <div class="img-comp-placeholder" id="compRealPlaceholder">🗾<span>上の候補から選択</span></div>
+    </div>
+  </div>
 </div>
 
 <div class="card">
@@ -523,7 +522,7 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
       <div class="s-sub" id="sSub">地図に薄いピンで表示されました。<br>議論・確認後に本登録へ移行できます。</div>
       <div class="s-spot" id="sSpot"></div>
       <div class="s-btns">
-        <button class="s-btn p" onclick="location.href='/'">地図で見る</button>
+        <button class="s-btn p" onclick="goToMap()">地図で見る 🗺</button>
         <button class="s-btn s" onclick="resetForm()">続けて登録</button>
       </div>
     </div>
@@ -919,15 +918,21 @@ async function runDirectAnalyze(url, existingTimer) {
   }
   if (!uploadedImageBase64) currentAnimeImg = imageUrl;
 
-  const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。提供された画像やURLを分析し、アニメ・マンガ作品の聖地情報をJSONで返してください。\n' +
+  const prompt = 'あなたはアニメ・マンガの聖地巡礼専門家です。学習済みのアニメ・マンガ聖地に関する知識（ロケ地データベース・公式情報・ファンWiki・巡礼レポート等）と、提供された画像・URLを組み合わせて分析してください。\n' +
+    '【分析手順】\n' +
+    '1. 画像に映っている風景・建物・看板・地形・背景の特徴を詳しく観察する。\n' +
+    '2. その視覚情報と、アニメ・マンガのロケ地として知られている実在の場所の知識を照合する。\n' +
+    '3. URLや動画タイトルに作品名・エピソード情報があれば優先的に活用する。\n' +
+    '4. 神社・駅・橋・商店街・学校など特徴的な建物や構造物は積極的に固有名詞で特定する。\n' +
+    '5. 背景の山・海・川・建物の配置から都道府県レベルの絞り込みも行う。\n' +
     '【重要ルール】\n' +
-    '1. 画像に映っている場所・風景・ランドマーク・看板・建物・背景を詳しく観察し、実在の住所・地名を特定してください。\n' +
-    '2. 部分的にでも場所が推測できれば確信度とともに候補として返してください（完全に不明な場合のみnull）。\n' +
-    '3. candidatesには確信度30%以上の候補をすべて列挙（最大3件）。\n' +
-    '4. 作品名が特定できなくても場所情報だけ返してください。\n' +
+    '- 部分的にでも場所が推測できれば確信度とともに候補として返す（完全に不明な場合のみnull）。\n' +
+    '- candidatesには確信度20%以上の候補をすべて列挙（最大4件）。\n' +
+    '- 作品名が特定できなくても場所情報だけ返す。\n' +
+    '- locationは「都道府県市区町村＋施設名」の形式で具体的に記述する。\n' +
     '【出力形式】JSONのみ:\n' +
     '{"work":"作品名またはnull","title":"スポット名","location":"住所または著名地名、不明ならnull","ep":"エピソードまたはnull","emoji":"絵文字1文字","confidence":確信度0〜100,"candidates":[{"name":"候補地名","location":"住所","confidence":確信度}]}\n' +
-    '例: {"work":"君の名は。","title":"須賀神社 階段","location":"東京都新宿区須賀町","ep":"エンディング","emoji":"⛩️","confidence":92,"candidates":[{"name":"須賀神社","location":"東京都新宿区須賀町1-5","confidence":92}]}';
+    '例: {"work":"君の名は。","title":"須賀神社 男坂","location":"東京都新宿区須賀町1-5 須賀神社","ep":"終盤・再会シーン","emoji":"⛩️","confidence":95,"candidates":[{"name":"須賀神社 男坂","location":"東京都新宿区須賀町1-5","confidence":95},{"name":"須賀神社 女坂","location":"東京都新宿区須賀町","confidence":60}]}';
 
   const payload = { prompt, url };
   if (uploadedImageBase64) {
@@ -998,79 +1003,31 @@ function showAnalyzeStatus(confidence) {
 }
 
 function showImgComp(animeUrl) {
-  document.getElementById('imgCompCard').style.display = 'block';
-  const ytMatch = document.getElementById('urlInput').value.match(/(?:v=|youtu\.be\/|shorts\/)([^&?#\/]+)/);
-  const picker = document.getElementById('framePicker');
-  if (ytMatch) {
-    const vid = ytMatch[1];
-    const frames = [
-      { url: 'https://img.youtube.com/vi/'+vid+'/maxresdefault.jpg', label: 'サムネ' },
-      { url: 'https://img.youtube.com/vi/'+vid+'/1.jpg', label: 'フレーム1' },
-      { url: 'https://img.youtube.com/vi/'+vid+'/2.jpg', label: 'フレーム2' },
-      { url: 'https://img.youtube.com/vi/'+vid+'/3.jpg', label: 'フレーム3' },
-    ];
-    picker.style.display = 'grid';
-    picker.innerHTML = frames.map((f, i) =>
-      '<div class="frame-opt'+(i===0?' selected':'')+'" onclick="pickAnimeFrame(\''+encodeURIComponent(f.url)+'\',this)">' +
-      '<img src="'+f.url+'" onerror="this.parentElement.style.display=\'none\'" onclick="event.stopPropagation();openLightbox(\''+f.url+'\',\''+f.label+'\')">' +
-      '<div class="frame-opt-zoom">🔍</div>' +
-      '<div class="frame-opt-label">'+f.label+'</div>' +
-      '</div>'
-    ).join('');
-    pickAnimeFrame(encodeURIComponent(frames[0].url), picker.firstElementChild);
-  } else if (animeUrl) {
-    setAnimeThumb(animeUrl);
-    document.getElementById('fAnimeImg').value = animeUrl;
-    currentAnimeImg = animeUrl;
-  }
-}
-
-function pickAnimeFrame(encodedUrl, el) {
-  const url = decodeURIComponent(encodedUrl);
-  document.querySelectorAll('.frame-opt').forEach(e => e.classList.remove('selected'));
-  if (el) el.classList.add('selected');
-  setAnimeThumb(url);
+  const url = animeUrl || currentAnimeImg;
+  if (!url) return;
   document.getElementById('fAnimeImg').value = url;
   currentAnimeImg = url;
+  setAnimeThumb(url);
+  document.getElementById('sceneCompCard').style.display = 'block';
 }
 
 function setAnimeThumb(url) {
-  const thumb = document.getElementById('animeImgThumb');
-  const placeholder = document.getElementById('animeImgPlaceholder');
-  if (url) {
-    thumb.src = url;
-    thumb.style.display = 'block';
-    placeholder.style.display = 'none';
-    thumb.onerror = () => { thumb.style.display = 'none'; placeholder.style.display = 'flex'; };
-  } else {
-    thumb.style.display = 'none';
-    placeholder.style.display = 'flex';
-  }
-}
-
-function onAnimeImgInput(url) {
-  document.querySelectorAll('.frame-opt').forEach(e => e.classList.remove('selected'));
-  if (url && url.startsWith('http')) {
-    setAnimeThumb(url);
-    currentAnimeImg = url;
-  } else {
-    document.getElementById('animeImgThumb').style.display = 'none';
-    document.getElementById('animeImgPlaceholder').style.display = 'flex';
-    currentAnimeImg = null;
-  }
+  const img = document.getElementById('compAnimeImg');
+  if (img && url) img.src = url;
 }
 
 function onRealImgInput(url) {
-  const thumb = document.getElementById('realImgThumb');
-  const placeholder = document.getElementById('realImgPlaceholder');
-  if (url && url.startsWith('http')) {
-    thumb.src = url;
-    thumb.style.display = 'block';
-    placeholder.style.display = 'none';
-    thumb.onerror = () => { thumb.style.display = 'none'; placeholder.style.display = 'flex'; };
-  } else {
-    thumb.style.display = 'none';
-    placeholder.style.display = 'flex';
+  const img = document.getElementById('compRealImg');
+  const ph  = document.getElementById('compRealPlaceholder');
+  document.getElementById('fRealImg').value = url || '';
+  if (img && url && url.startsWith('http')) {
+    img.src = url; img.style.display = 'block';
+    if (ph) ph.style.display = 'none';
+    document.getElementById('sceneCompCard').style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; if (ph) ph.style.display = 'flex'; };
+  } else if (img) {
+    img.style.display = 'none';
+    if (ph) ph.style.display = 'flex';
   }
 }
 
@@ -1307,6 +1264,12 @@ function backToStep1() {
   setStep(1);
 }
 
+function goToMap() {
+  const lat = document.getElementById('fLat').value;
+  const lng = document.getElementById('fLng').value;
+  location.href = (lat && lng) ? '/?zLat=' + lat + '&zLng=' + lng : '/';
+}
+
 function resetForm() {
   document.getElementById('urlInput').value = '';
   document.getElementById('urlBadge').className = 'url-badge';
@@ -1331,8 +1294,13 @@ function resetForm() {
   document.getElementById('animeImgPlaceholder').style.display = 'flex';
   document.getElementById('realImgThumb').style.display = 'none';
   document.getElementById('realImgPlaceholder').style.display = 'flex';
-  document.getElementById('framePicker').style.display = 'none';
-  document.getElementById('framePicker').innerHTML = '';
+  document.getElementById('sceneCompCard').style.display = 'none';
+  document.getElementById('compAnimeImg').src = '';
+  document.getElementById('compRealImg').src = '';
+  document.getElementById('compRealImg').style.display = 'none';
+  document.getElementById('compRealPlaceholder').style.display = 'flex';
+  document.getElementById('fAnimeImg').value = '';
+  document.getElementById('fRealImg').value = '';
   document.getElementById('s1FrameWrap').style.display = 'none';
   document.getElementById('s1FrameGrid').innerHTML = '';
   document.getElementById('analyzeStart').value = '';
