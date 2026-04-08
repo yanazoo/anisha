@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>アニしゃ — スポット登録・編集</title>
 <link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root {
   --white:#fff; --black:#0d0d0d; --border:#e2e6ea;
@@ -251,17 +252,43 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 .lightbox-img{max-width:94vw;max-height:88vh;object-fit:contain;border-radius:10px;}
 .lightbox-close{position:absolute;top:14px;right:18px;color:#fff;font-size:32px;cursor:pointer;line-height:1;}
 .lightbox-label{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:11px;white-space:nowrap;}
+/* AUTH GATE */
+.auth-gate{position:fixed;inset:0;z-index:4000;background:var(--sky);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;}
+.auth-gate.hide{display:none;}
+.auth-gate-logo{font-size:28px;font-family:'Yomogi',cursive;color:var(--sky-dark);font-weight:700;}
+.auth-gate-msg{font-size:13px;color:var(--muted);text-align:center;line-height:1.8;max-width:280px;}
+.auth-google-btn{width:100%;max-width:280px;height:50px;border-radius:12px;border:1.5px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.auth-google-btn:hover{background:var(--sky);border-color:var(--sky-dark);}
+.reg-user-chip{display:flex;align-items:center;gap:6px;background:var(--sky2);border-radius:20px;padding:3px 10px 3px 3px;cursor:pointer;border:none;}
+.reg-user-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;}
+.reg-user-name{font-size:10px;font-weight:700;color:var(--sky-dark);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 </style>
 
 </head>
 <body>
 
+<!-- ログインゲート（未ログイン時のオーバーレイ） -->
+<div class="auth-gate" id="authGate">
+  <div class="auth-gate-logo">アニしゃ</div>
+  <div style="font-size:32px">🔒</div>
+  <div class="auth-gate-msg">聖地を登録するには<br>ログインが必要です</div>
+  <button class="auth-google-btn" onclick="signInWithGoogle()">
+    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Googleでログイン
+  </button>
+  <a href="/" style="font-size:12px;color:var(--muted);">← 地図に戻る</a>
+</div>
+
 <div class="header">
   <a class="back" href="/">←</a>
-  <div>
+  <div style="flex:1">
     <div class="page-title" id="pageTitle">スポット登録</div>
     <div class="page-sub" id="pageSub">あのシーンの場所を登録しよう</div>
   </div>
+  <button class="reg-user-chip" id="regUserChip" style="display:none" onclick="signOut()">
+    <img class="reg-user-avatar" id="regUserAvatar" src="" alt="">
+    <span class="reg-user-name" id="regUserName"></span>
+  </button>
 </div>
 
 <!-- TABS -->
@@ -674,6 +701,40 @@ transition:transform .25s;z-index:1000;white-space:nowrap;}
 <script>
 const SUPABASE_URL = 'https://zzpfnszijxkfxtietilr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cGZuc3ppanhrZnh0aWV0aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTI2MzMsImV4cCI6MjA5MDU4ODYzM30.gqVLopJ3kveG1YwAcF6LQ7GFS2tZ0VRlHAG7M4je2Z0';
+
+// ── Supabase Auth ─────────────────────────────────────────
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+
+sbClient.auth.onAuthStateChange((event, session) => {
+  currentUser = session?.user || null;
+  const gate   = document.getElementById('authGate');
+  const chip   = document.getElementById('regUserChip');
+  const avatar = document.getElementById('regUserAvatar');
+  const name   = document.getElementById('regUserName');
+  if (currentUser) {
+    const meta = currentUser.user_metadata || {};
+    if (gate)   gate.classList.add('hide');
+    if (chip)   { chip.style.display = 'flex'; }
+    if (avatar) { avatar.src = meta.avatar_url || meta.picture || ''; }
+    if (name)   { name.textContent = meta.full_name || meta.name || 'ユーザー'; }
+  } else {
+    if (gate) gate.classList.remove('hide');
+    if (chip) chip.style.display = 'none';
+  }
+});
+
+async function signInWithGoogle() {
+  await sbClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/register.html' }
+  });
+}
+
+async function signOut() {
+  await sbClient.auth.signOut();
+}
+// ────────────────────────────────────────────────────────
 
 let allSpots = [];
 let editingSpotId = null;
@@ -1448,15 +1509,19 @@ async function submitSpot(status) {
     confidence: status === 'confirmed' ? 100 : 50,
     discussion_url: discUrls.length > 0 ? discUrls.join(',') : null,
     anime_img: document.getElementById('fAnimeImg').value.trim() || currentAnimeImg || null,
-    real_img: document.getElementById('fRealImg').value.trim() || null
+    real_img: document.getElementById('fRealImg').value.trim() || null,
+    user_id: currentUser?.id || null
   };
+
+  // ログイン済みユーザーのJWTを優先使用
+  const authToken = (await sbClient.auth.getSession())?.data?.session?.access_token || SUPABASE_KEY;
 
   try {
     const res = await fetch(SUPABASE_URL + '/rest/v1/spots', {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Authorization': 'Bearer ' + authToken,
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
