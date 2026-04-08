@@ -311,6 +311,20 @@ z-index:2000;white-space:nowrap;}
     <div class="menu-stat"><div class="menu-stat-num" id="menuStatPhotos">—</div><div class="menu-stat-label">Photos</div></div>
   </div>
   <div class="menu-body" id="menuBody"></div>
+  <!-- ユーザー情報＋ログアウト -->
+  <div id="menuUserSection" style="display:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--sky)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <img id="menuUserAvatar" src="" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--sky3)">
+      <div>
+        <div id="menuUserName" style="font-size:12px;font-weight:700;color:var(--black)"></div>
+        <div id="menuUserEmail" style="font-size:10px;color:var(--muted)"></div>
+      </div>
+    </div>
+    <button onclick="signOut()" style="width:100%;height:36px;border-radius:8px;border:1.5px solid #e57373;background:transparent;color:#e57373;font-size:12px;font-weight:700;cursor:pointer;">ログアウト</button>
+  </div>
+  <div id="menuLoginSection" style="display:none;padding:12px 16px;border-top:1px solid var(--border)">
+    <button onclick="openAuthModal()" style="width:100%;height:36px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">ログイン / 新規登録</button>
+  </div>
 </div>
 
 <header>
@@ -457,23 +471,35 @@ function updateAuthUI() {
   const memail = document.getElementById('authModalEmail');
   const signInArea = document.getElementById('authSignInArea');
   const userArea   = document.getElementById('authUserArea');
+  const menuUser   = document.getElementById('menuUserSection');
+  const menuLogin  = document.getElementById('menuLoginSection');
+  const menuAv     = document.getElementById('menuUserAvatar');
+  const menuName   = document.getElementById('menuUserName');
+  const menuEmail  = document.getElementById('menuUserEmail');
   if (!btn) return;
   if (currentUser) {
     const meta = currentUser.user_metadata || {};
     const avatarUrl = meta.avatar_url || meta.picture || '';
+    const fallback = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a9cc7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
     btn.style.display = 'none';
     av.style.display = 'block';
-    av.src = avatarUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a9cc7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
-    if (mav)    { mav.src = av.src; }
-    if (mname)  { mname.textContent = meta.full_name || meta.name || 'ユーザー'; }
-    if (memail) { memail.textContent = currentUser.email || ''; }
+    av.src = avatarUrl || fallback;
+    av.title = 'タップでアカウント情報';
+    if (mav)    mav.src = av.src;
+    if (mname)  mname.textContent = meta.full_name || meta.name || 'ユーザー';
+    if (memail) memail.textContent = currentUser.email || '';
     if (signInArea) signInArea.style.display = 'none';
     if (userArea)   userArea.style.display = 'block';
+    if (menuUser)  { menuUser.style.display = 'block'; menuLogin.style.display = 'none'; }
+    if (menuAv)    menuAv.src = av.src;
+    if (menuName)  menuName.textContent = meta.full_name || meta.name || 'ユーザー';
+    if (menuEmail) menuEmail.textContent = currentUser.email || '';
   } else {
     btn.style.display = 'block';
     av.style.display = 'none';
     if (signInArea) signInArea.style.display = 'block';
     if (userArea)   userArea.style.display = 'none';
+    if (menuUser)  { menuUser.style.display = 'none'; menuLogin.style.display = 'block'; }
   }
 }
 
