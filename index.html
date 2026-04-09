@@ -252,6 +252,15 @@ border:none;border-radius:6px;font-family:‘Yomogi’,cursive;font-size:12px;fo
 .auth-user-mail{font-size:10px;color:var(--muted);}
 .auth-signout-btn{height:32px;padding:0 14px;border-radius:8px;border:1.5px solid #e57373;background:transparent;color:#e57373;font-size:11px;font-weight:700;cursor:pointer;}
 
+/* CHECKIN */
+.d-btn.checkin-done{background:#27ae60;border-color:#27ae60;color:#fff;}
+.d-btn.checkin-done:hover{background:#219a52;}
+.popup-cta.checkin-done{background:#27ae60;}
+.popup-cta.checkin-done:hover{background:#219a52;}
+.pin-visited-badge{position:absolute;top:-5px;left:-5px;width:15px;height:15px;border-radius:50%;
+background:#27ae60;border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;
+font-size:8px;color:#fff;line-height:1;}
+
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
 background:var(--glass);border:1px solid var(--gb);backdrop-filter:blur(16px);
@@ -308,7 +317,7 @@ z-index:2000;white-space:nowrap;}
   <div class="menu-stats">
     <div class="menu-stat"><div class="menu-stat-num" id="menuStatSpots">—</div><div class="menu-stat-label">Spots</div></div>
     <div class="menu-stat"><div class="menu-stat-num" id="menuStatWorks">—</div><div class="menu-stat-label">Works</div></div>
-    <div class="menu-stat"><div class="menu-stat-num" id="menuStatPhotos">—</div><div class="menu-stat-label">Photos</div></div>
+    <div class="menu-stat"><div class="menu-stat-num" id="menuStatVisited">—</div><div class="menu-stat-label">Visited</div></div>
   </div>
   <div class="menu-body" id="menuBody"></div>
   <!-- ユーザー情報＋ログアウト -->
@@ -398,8 +407,8 @@ z-index:2000;white-space:nowrap;}
           <div class="detail-tags" id="detailTags"></div>
         </div>
         <div class="detail-actions">
+          <button class="d-btn" id="detailCheckinBtn" onclick="toggleCheckin(currentSpot&&currentSpot.id)">🗺 行った！</button>
           <button class="d-btn fill" onclick="openNavi()">📍 Navigate</button>
-          <button class="d-btn" onclick="showToast('構図ガイド Coming Soon 🎬')">🎬 Scene</button>
           <button class="d-btn close" onclick="closeDetail()">✕</button>
         </div>
       </div>
@@ -425,8 +434,8 @@ z-index:2000;white-space:nowrap;}
     <div class="sheet-work" id="sheetWork">—</div>
     <div class="sheet-tags" id="sheetTags"></div>
     <div class="sheet-btns">
+      <button class="d-btn" id="sheetCheckinBtn" onclick="toggleCheckin(currentSpot&&currentSpot.id)">🗺 行った！</button>
       <button class="d-btn fill" onclick="openNavi()">📍 Navigate</button>
-      <button class="d-btn" onclick="showToast('構図ガイド Coming Soon 🎬')">🎬 Scene</button>
       <button class="d-btn close" onclick="closeDetail()">✕</button>
     </div>
   </div>
@@ -457,6 +466,7 @@ let _authPendingCallback = null;
 sbClient.auth.onAuthStateChange((event, session) => {
   currentUser = session?.user || null;
   updateAuthUI();
+  loadMyCheckins();
   if (currentUser && _authPendingCallback) {
     const cb = _authPendingCallback; _authPendingCallback = null;
     closeAuthModal(); cb();
@@ -543,13 +553,15 @@ const statusStyle={
   official:{opacity:'1',border:'2.5px solid #fbbf24',extra:'box-shadow:0 0 0 3px rgba(251,191,36,0.5),0 3px 10px rgba(0,0,0,0.2);'},
 };
 let allSpots=[],filteredSpots=[],markers={},currentSpot=null,drawerOpen=false,menuOpen=false;
+let myCheckins=new Set(),checkinCounts={};
 
-function makeIcon(emoji,tag,status){
-  const c=tagColors[tag]||'#888';
+function makeIcon(emoji,tag,status,visited){
+  const c=visited?'#27ae60':(tagColors[tag]||'#888');
   const st=statusStyle[status]||statusStyle.confirmed;
   const badge=status==='official'?'<div style="position:absolute;top:-4px;right:-4px;font-size:9px;line-height:1">⭐</div>':'';
+  const vbadge=visited?'<div class="pin-visited-badge">✓</div>':'';
   return L.divIcon({className:'',
-    html:'<div class="pin-wrap" style="opacity:'+st.opacity+'"><div class="pin-head" style="position:relative;background:'+c+';border:'+st.border+';'+st.extra+'"><span>'+(emoji||'📍')+'</span>'+badge+'</div><div class="pin-tail"></div></div>',
+    html:'<div class="pin-wrap" style="opacity:'+st.opacity+'"><div class="pin-head" style="position:relative;background:'+c+';border:'+st.border+';'+st.extra+'"><span>'+(emoji||'📍')+'</span>'+badge+vbadge+'</div><div class="pin-tail"></div></div>',
     iconSize:[34,43],iconAnchor:[17,43],popupAnchor:[0,-47]});
 }
 
@@ -596,13 +608,33 @@ function menuSearch(q){
   if(query)document.querySelectorAll('.work-section').forEach(ws=>ws.classList.add('open'));
 }
 
+function makePopupHtml(s){
+  const _q=encodeURIComponent((s.work||'')+(s.title?' '+s.title:'')+(s.location?' '+s.location:'')+'　聖地巡礼');
+  const _imgUrl='https://www.google.com/search?q='+_q+'&tbm=isch';
+  const visited=myCheckins.has(String(s.id));
+  const cnt=checkinCounts[String(s.id)]||0;
+  return '<div class="popup-body">'+
+    (s.anime_img?'<img class="popup-thumb" src="'+s.anime_img+'" onerror="this.style.display=\'none\'">':'')+
+    '<div class="popup-title">'+s.title+'</div>'+
+    '<div class="popup-work">'+s.work+'</div>'+
+    '<div class="popup-meta">'+
+      '<span class="popup-tag">📍 '+(s.location||'—')+'</span>'+
+      '<span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+
+      (cnt?'<span class="popup-tag">✓ '+cnt+'人</span>':'')+
+      (s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+
+    '</div>'+
+    '<div style="display:flex;gap:6px;">'+
+      '<button class="popup-cta'+(visited?' checkin-done':'')+'" style="flex:1" onclick="toggleCheckin(\''+s.id+'\')">'+(visited?'✓ 行った！':'🗺 行った！')+'</button>'+
+      '<a class="popup-cta" href="'+_imgUrl+'" target="_blank" rel="noopener" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:#fff;font-family:\'Yomogi\',cursive;">🔍 検索</a>'+
+    '</div>'+
+    '</div>';
+}
+
 function renderMarkers(spots){
   Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
   spots.forEach(s=>{
-    const _q=encodeURIComponent((s.work||'')+(s.title?' '+s.title:'')+(s.location?' '+s.location:'')+'　聖地巡礼');
-    const _imgUrl='https://www.google.com/search?q='+_q+'&tbm=isch';
-    const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag,s.status)}).addTo(map)
-      .bindPopup('<div class="popup-body">'+(s.anime_img?'<img class="popup-thumb" src="'+s.anime_img+'" onerror="this.style.display=\'none\'">':'')+'<div class="popup-title">'+s.title+'</div><div class="popup-work">'+s.work+'</div><div class="popup-meta"><span class="popup-tag">📍 '+(s.location||'—')+'</span><span class="popup-tag">📸 '+(s.count||0).toLocaleString()+'</span>'+(s.diff?'<span class="popup-tag">'+s.diff+'</span>':'')+'</div><a class="popup-cta" href="'+_imgUrl+'" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:#fff;font-family:\'Yomogi\',cursive;">🔍 画像検索で見る</a></div>',{maxWidth:230})
+    const m=L.marker([s.lat,s.lng],{icon:makeIcon(s.emoji,s.tag,s.status,myCheckins.has(String(s.id)))}).addTo(map)
+      .bindPopup(makePopupHtml(s),{maxWidth:240})
       .on('click',()=>selectSpot(s.id));
     markers[s.id]=m;
   });
@@ -658,6 +690,7 @@ function selectSpot(id){
   document.getElementById('mobileSheet').classList.add('show');
   document.getElementById('spotDrawer').classList.remove('expanded');
   drawerOpen=false;
+  updateCheckinButton(s.id);
 }
 
 function closeDetail(){
@@ -670,6 +703,93 @@ function openNavi(){if(!currentSpot)return;window.open('https://www.google.com/m
 function toggleDrawer(){drawerOpen=!drawerOpen;document.getElementById('spotDrawer').classList.toggle('expanded',drawerOpen);if(drawerOpen)closeDetail();}
 function searchSpots(q){const query=q.trim().toLowerCase();filteredSpots=!query?[...allSpots]:allSpots.filter(s=>s.title.toLowerCase().includes(query)||s.work.toLowerCase().includes(query)||(s.location||'').toLowerCase().includes(query));renderMarkers(filteredSpots);renderDrawerList(filteredSpots);renderMenu(filteredSpots);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── チェックイン機能 ────────────────────────────────────────
+async function loadCheckinCounts(){
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/checkins?select=spot_id',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!res.ok)return;
+    const data=await res.json();
+    checkinCounts={};
+    data.forEach(r=>{const k=String(r.spot_id);checkinCounts[k]=(checkinCounts[k]||0)+1;});
+  }catch(e){console.warn('loadCheckinCounts',e);}
+}
+
+async function loadMyCheckins(){
+  if(!currentUser){myCheckins=new Set();refreshCheckinsUI();return;}
+  try{
+    const token=(await sbClient.auth.getSession()).data.session?.access_token;
+    const res=await fetch(SUPABASE_URL+'/rest/v1/checkins?select=spot_id&user_id=eq.'+currentUser.id,{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}
+    });
+    if(!res.ok)return;
+    const data=await res.json();
+    myCheckins=new Set(data.map(r=>String(r.spot_id)));
+    refreshCheckinsUI();
+  }catch(e){console.warn('loadMyCheckins',e);}
+}
+
+function refreshCheckinsUI(){
+  allSpots.forEach(s=>{
+    if(markers[s.id])markers[s.id].setIcon(makeIcon(s.emoji,s.tag,s.status,myCheckins.has(String(s.id))));
+  });
+  const visitedEl=document.getElementById('menuStatVisited');
+  if(visitedEl)visitedEl.textContent=myCheckins.size||'—';
+  if(currentSpot)updateCheckinButton(currentSpot.id);
+}
+
+function updateCheckinButton(spotId){
+  const visited=myCheckins.has(String(spotId));
+  const cnt=checkinCounts[String(spotId)]||0;
+  const label=(visited?'✓ 行った！':'🗺 行った！')+(cnt?' ('+cnt+')':'');
+  ['detailCheckinBtn','sheetCheckinBtn'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(!btn)return;
+    btn.textContent=label;
+    btn.classList.toggle('checkin-done',visited);
+  });
+  if(markers[spotId])markers[spotId].setPopupContent(makePopupHtml(allSpots.find(x=>x.id==spotId)||{id:spotId}));
+}
+
+async function toggleCheckin(spotId){
+  if(!spotId)return;
+  if(!currentUser){_authPendingCallback=()=>toggleCheckin(spotId);openAuthModal();return;}
+  const token=(await sbClient.auth.getSession()).data.session?.access_token;
+  const sid=String(spotId);
+  if(myCheckins.has(sid)){
+    const res=await fetch(SUPABASE_URL+'/rest/v1/checkins?user_id=eq.'+currentUser.id+'&spot_id=eq.'+sid,{
+      method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}
+    });
+    if(res.ok||res.status===204){
+      myCheckins.delete(sid);
+      checkinCounts[sid]=Math.max(0,(checkinCounts[sid]||1)-1);
+      showToast('チェックインを取り消しました');
+    }
+  }else{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/checkins',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({user_id:currentUser.id,spot_id:sid})
+    });
+    if(res.ok||res.status===201){
+      myCheckins.add(sid);
+      checkinCounts[sid]=(checkinCounts[sid]||0)+1;
+      showToast('🎉 行った！チェックイン完了！');
+    }
+  }
+  if(markers[spotId])markers[spotId].setIcon(makeIcon(
+    (allSpots.find(x=>x.id==spotId)||{}).emoji,
+    (allSpots.find(x=>x.id==spotId)||{}).tag,
+    (allSpots.find(x=>x.id==spotId)||{}).status,
+    myCheckins.has(sid)
+  ));
+  updateCheckinButton(spotId);
+  const visitedEl=document.getElementById('menuStatVisited');
+  if(visitedEl)visitedEl.textContent=myCheckins.size||'—';
+}
+// ────────────────────────────────────────────────────────────
 
 map.on('click',e=>{if(!e.originalEvent.target.closest('.pin-wrap'))closeDetail();});
 
@@ -690,6 +810,7 @@ function showError(msg){
 setTimeout(async()=>{
   try{
     document.getElementById('splashSub').textContent='Connecting...';
+    loadCheckinCounts();
     const res=await fetch(SUPABASE_URL+'/rest/v1/spots?select=*&order=count.desc',{
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
