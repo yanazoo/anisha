@@ -584,7 +584,7 @@ function renderMenu(spots){
   const tp=spots.reduce((a,s)=>a+(s.count||0),0);
   document.getElementById('menuStatSpots').textContent=spots.length;
   document.getElementById('menuStatWorks').textContent=Object.keys(works).length;
-  document.getElementById('menuStatPhotos').textContent=tp>=1000?(tp/1000).toFixed(1)+'k':tp;
+  const visitedEl=document.getElementById('menuStatVisited');if(visitedEl)visitedEl.textContent=myCheckins.size||'—';
   document.getElementById('menuBody').innerHTML=Object.entries(works).map(([work,data])=>
     '<div class="work-section">'+
     '<div class="work-header" onclick="toggleWork(this)">'+
