@@ -110,6 +110,9 @@ html,body{min-height:100%;background:var(--light);color:var(--black);font-family
 .review-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
 .review-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;
   border:1.5px solid var(--sky3);flex-shrink:0;background:var(--sky2);}
+.review-avatar-fb{width:28px;height:28px;border-radius:50%;background:var(--sky2);
+  border:1.5px solid var(--sky3);flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:14px;}
 .review-name{font-size:12px;font-weight:700;flex:1;}
 .review-date{font-size:10px;color:var(--muted);}
 .review-text{font-size:12px;line-height:1.8;color:var(--black);}
@@ -331,15 +334,17 @@ function renderReviews(reviews) {
     const name = r.user_name || 'ユーザー';
     const avatar = r.user_avatar || '';
     const date = new Date(r.created_at).toLocaleDateString('ja-JP');
-    const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a9cc7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
-    return `<div class="review-item">
-      <div class="review-header">
-        <img class="review-avatar" src="${avatar||fallbackSvg}" onerror="this.src='${fallbackSvg}'" alt="${name}">
-        <div class="review-name">${name}</div>
-        <div class="review-date">${date}</div>
-      </div>
-      <div class="review-text">${r.body.replace(/\n/g,'<br>')}</div>
-    </div>`;
+    const safeBody = r.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const avatarHtml = avatar
+      ? '<img class="review-avatar" src="' + avatar + '" alt="" onerror="this.outerHTML=\'<div class=&quot;review-avatar-fb&quot;>👤</div>\'">'
+      : '<div class="review-avatar-fb">👤</div>';
+    return '<div class="review-item">' +
+      '<div class="review-header">' + avatarHtml +
+      '<div class="review-name">' + name + '</div>' +
+      '<div class="review-date">' + date + '</div>' +
+      '</div>' +
+      '<div class="review-text">' + safeBody + '</div>' +
+      '</div>';
   }).join('');
 }
 
