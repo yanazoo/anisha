@@ -211,7 +211,7 @@ async function init() {
 
     // レビュー取得
     const reviewRes = await fetch(
-      SUPABASE_URL + '/rest/v1/reviews?select=*,user:user_id(id,raw_user_meta_data)&spot_id=eq.' + spotId + '&order=created_at.desc',
+      SUPABASE_URL + '/rest/v1/reviews?select=*&spot_id=eq.' + spotId + '&order=created_at.desc',
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
     );
     const reviews = reviewRes.ok ? await reviewRes.json() : [];
@@ -328,9 +328,8 @@ function renderReviews(reviews) {
     return '<div class="review-empty">まだレビューがありません。最初の訪問レポートを書いてみよう！</div>';
   }
   return reviews.map(r => {
-    const meta = r.user?.raw_user_meta_data || {};
-    const name = meta.full_name || meta.name || 'ユーザー';
-    const avatar = meta.avatar_url || meta.picture || '';
+    const name = r.user_name || 'ユーザー';
+    const avatar = r.user_avatar || '';
     const date = new Date(r.created_at).toLocaleDateString('ja-JP');
     const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a9cc7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
     return `<div class="review-item">
@@ -392,17 +391,20 @@ async function submitReview() {
   const body = document.getElementById('reviewText').value.trim();
   if (!body) { showToast('レビュー内容を入力してください'); return; }
   const token = (await sbClient.auth.getSession()).data.session?.access_token;
+  const meta = currentUser.user_metadata || {};
+  const user_name   = meta.full_name || meta.name || 'ユーザー';
+  const user_avatar = meta.avatar_url || meta.picture || '';
   const res = await fetch(SUPABASE_URL + '/rest/v1/reviews', {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ user_id: currentUser.id, spot_id: String(spotId), body })
+    body: JSON.stringify({ user_id: currentUser.id, spot_id: String(spotId), body, user_name, user_avatar })
   });
   if (res.ok || res.status === 201) {
     showToast('レビューを投稿しました！');
     document.getElementById('reviewText').value = '';
     // レビュー一覧を再取得
     const r2 = await fetch(
-      SUPABASE_URL + '/rest/v1/reviews?select=*,user:user_id(id,raw_user_meta_data)&spot_id=eq.' + spotId + '&order=created_at.desc',
+      SUPABASE_URL + '/rest/v1/reviews?select=*&spot_id=eq.' + spotId + '&order=created_at.desc',
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
     );
     if (r2.ok) {
