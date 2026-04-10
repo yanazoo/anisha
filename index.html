@@ -374,7 +374,19 @@ z-index:2000;white-space:nowrap;}
           <div class="auth-user-mail" id="authModalEmail"></div>
         </div>
       </div>
-      <button class="auth-signout-btn" onclick="signOut()" style="width:100%;margin-top:8px">ログアウト</button>
+      <!-- ニックネーム設定 -->
+      <div style="margin-top:14px;padding:12px;background:var(--sky);border-radius:10px;border:1px solid var(--gb)">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px;letter-spacing:.06em">アニしゃ内の表示名</div>
+        <div style="display:flex;gap:6px">
+          <input id="usernameInput" type="text" maxlength="20" placeholder="ニックネームを入力"
+            style="flex:1;height:36px;padding:0 10px;background:#fff;border:1px solid var(--gb);
+            border-radius:8px;font-family:'Yomogi',cursive;font-size:12px;color:var(--black);outline:none;">
+          <button onclick="saveUsername()" style="height:36px;padding:0 14px;border-radius:8px;
+            background:var(--accent);border:none;color:#fff;font-family:'Yomogi',cursive;
+            font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">保存</button>
+        </div>
+      </div>
+      <button class="auth-signout-btn" onclick="signOut()" style="width:100%;margin-top:10px">ログアウト</button>
     </div>
     <button class="auth-modal-close" onclick="closeAuthModal()">閉じる</button>
   </div>
@@ -469,6 +481,7 @@ sbClient.auth.onAuthStateChange((event, session) => {
   currentUser = session?.user || null;
   updateAuthUI();
   loadMyCheckins();
+  loadProfile();
   if (currentUser && _authPendingCallback) {
     const cb = _authPendingCallback; _authPendingCallback = null;
     closeAuthModal(); cb();
@@ -707,6 +720,45 @@ function openNavi(){if(!currentSpot)return;window.open('https://www.google.com/m
 function toggleDrawer(){drawerOpen=!drawerOpen;document.getElementById('spotDrawer').classList.toggle('expanded',drawerOpen);if(drawerOpen)closeDetail();}
 function searchSpots(q){const query=q.trim().toLowerCase();filteredSpots=!query?[...allSpots]:allSpots.filter(s=>s.title.toLowerCase().includes(query)||s.work.toLowerCase().includes(query)||(s.location||'').toLowerCase().includes(query));renderMarkers(filteredSpots);renderDrawerList(filteredSpots);renderMenu(filteredSpots);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── プロフィール（ニックネーム）─────────────────────────────
+let myProfile = null;
+
+async function loadProfile() {
+  if (!currentUser) return;
+  const token = (await sbClient.auth.getSession()).data.session?.access_token;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + currentUser.id + '&select=username', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
+  });
+  if (!res.ok) return;
+  const data = await res.json();
+  myProfile = data[0] || null;
+  const input = document.getElementById('usernameInput');
+  if (input && myProfile?.username) input.value = myProfile.username;
+}
+
+async function saveUsername() {
+  if (!currentUser) return;
+  const input = document.getElementById('usernameInput');
+  const username = input?.value.trim();
+  if (!username) { showToast('ニックネームを入力してください'); return; }
+  const token = (await sbClient.auth.getSession()).data.session?.access_token;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/profiles', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify({ id: currentUser.id, username, updated_at: new Date().toISOString() })
+  });
+  if (res.ok || res.status === 201) {
+    myProfile = { ...(myProfile || {}), username };
+    showToast('表示名を「' + username + '」に設定しました！');
+  } else {
+    showToast('保存に失敗しました');
+  }
+}
+// ────────────────────────────────────────────────────────────
 
 // ── チェックイン機能 ────────────────────────────────────────
 async function loadCheckinCounts(){

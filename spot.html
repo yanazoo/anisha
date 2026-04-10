@@ -397,7 +397,12 @@ async function submitReview() {
   if (!body) { showToast('レビュー内容を入力してください'); return; }
   const token = (await sbClient.auth.getSession()).data.session?.access_token;
   const meta = currentUser.user_metadata || {};
-  const user_name   = meta.full_name || meta.name || 'ユーザー';
+  // プロフィールのニックネームを優先使用
+  const profileRes = await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + currentUser.id + '&select=username', {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
+  });
+  const profileData = profileRes.ok ? await profileRes.json() : [];
+  const user_name   = profileData[0]?.username || meta.full_name || meta.name || 'ユーザー';
   const user_avatar = meta.avatar_url || meta.picture || '';
   const res = await fetch(SUPABASE_URL + '/rest/v1/reviews', {
     method: 'POST',
