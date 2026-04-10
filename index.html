@@ -98,8 +98,49 @@ cursor:pointer;transition:background .15s;border-top:1px solid var(--border);}
 .menu-spot-loc{font-size:10px;color:var(--muted);}
 .menu-spot-photos{font-size:10px;color:var(--muted);flex-shrink:0;}
 
+/* TAB BAR */
+.tab-bar{position:fixed;top:52px;left:0;right:0;z-index:200;height:44px;
+  background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);display:flex;}
+.tab{flex:1;border:none;background:transparent;font-family:'Yomogi',cursive;
+  font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;
+  border-bottom:3px solid transparent;transition:all .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* FEED */
+.feed-view{position:fixed;top:96px;left:0;right:0;bottom:0;z-index:5;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--light);}
+.feed-view::-webkit-scrollbar{display:none;}
+.feed-sort-bar{display:flex;gap:6px;padding:10px 12px 4px;overflow-x:auto;}
+.feed-sort-bar::-webkit-scrollbar{display:none;}
+.sort-btn{height:28px;padding:0 12px;border-radius:14px;border:1px solid var(--gb);
+  background:#fff;font-family:'Yomogi',cursive;font-size:11px;font-weight:700;
+  color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.sort-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.feed-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:6px 10px 80px;}
+.spot-card{background:#fff;border-radius:12px;border:1px solid var(--border);
+  overflow:hidden;cursor:pointer;transition:transform .15s;text-decoration:none;color:inherit;
+  display:block;box-shadow:0 2px 8px rgba(74,156,199,0.07);}
+.spot-card:active{transform:scale(0.97);}
+.spot-card-thumb{position:relative;width:100%;height:110px;overflow:hidden;background:var(--sky2);}
+.spot-card-img{width:100%;height:100%;object-fit:cover;display:block;}
+.spot-card-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;}
+.spot-card-visited{position:absolute;top:6px;right:6px;background:#27ae60;
+  color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:8px;}
+.spot-card-body{padding:8px 10px 10px;}
+.spot-card-work{font-size:9px;color:var(--accent);font-weight:700;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.spot-card-title{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:5px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.spot-card-meta{display:flex;align-items:center;gap:4px;}
+.spot-card-loc{font-size:9px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.spot-card-cnt{font-size:9px;color:#27ae60;flex-shrink:0;font-weight:700;}
+
+/* MAP VIEW — タブ導入後はtop:96px */
+.map-wrap{position:fixed;top:96px;left:0;right:0;bottom:0;z-index:1;}
+
 /* MAP */
-.map-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:1;}
+.map-wrap{position:fixed;top:96px;left:0;right:0;bottom:0;z-index:1;}
 #map{width:100%;height:100%;}
 .leaflet-tile{filter:saturate(0.35) brightness(1.05);}
 .leaflet-container{background:var(--light);}
@@ -280,11 +321,16 @@ z-index:2000;white-space:nowrap;}
 
 @media(max-width:768px){
 .detail-panel{display:none!important;}
-.mobile-sheet{display:block;}
-.spot-drawer{display:flex;}
 .map-badge{top:10px;right:10px;}
 .header-search{display:none;}
 }
+/* フィード表示中はmap専用UIを隠す */
+body.feed-active .mobile-sheet{display:none!important;}
+body.feed-active .spot-drawer{display:none!important;}
+body.feed-active .map-badge{display:none!important;}
+body:not(.feed-active) .mobile-sheet{display:block;}
+body:not(.feed-active) .spot-drawer{display:flex;}
+body:not(.feed-active) .feed-view{display:none;}
 </style>
 
 </head>
@@ -302,6 +348,22 @@ z-index:2000;white-space:nowrap;}
   <div class="error-title">接続エラー</div>
   <div class="error-msg" id="errorMsg">データの取得に失敗しました。</div>
   <button class="retry-btn" onclick="location.reload()">再試行</button>
+</div>
+
+<!-- タブバー -->
+<div class="tab-bar">
+  <button class="tab active" id="tabFeed" onclick="showTab('feed')">✨ 発見</button>
+  <button class="tab" id="tabMap" onclick="showTab('map')">🗺 地図</button>
+</div>
+
+<!-- フィードビュー -->
+<div class="feed-view" id="feedView">
+  <div class="feed-sort-bar">
+    <button class="sort-btn active" id="sortNew" onclick="setSort('new')">新着順</button>
+    <button class="sort-btn" id="sortCheckin" onclick="setSort('checkin')">チェックイン数</button>
+    <button class="sort-btn" id="sortWork" onclick="setSort('work')">作品別</button>
+  </div>
+  <div class="feed-grid" id="feedGrid"></div>
 </div>
 
 <div class="menu-overlay" id="menuOverlay" onclick="closeMenu()"></div>
@@ -794,6 +856,7 @@ function refreshCheckinsUI(){
   const visitedEl=document.getElementById('menuStatVisited');
   if(visitedEl)visitedEl.textContent=myCheckins.size||'—';
   if(currentSpot)updateCheckinButton(currentSpot.id);
+  if(document.body.classList.contains('feed-active'))renderFeed(filteredSpots);
 }
 
 function updateCheckinButton(spotId){
@@ -849,6 +912,65 @@ async function toggleCheckin(spotId){
 
 map.on('click',e=>{if(!e.originalEvent.target.closest('.pin-wrap'))closeDetail();});
 
+// ── フィード ────────────────────────────────────────────────
+let currentSort = 'new';
+
+function renderFeed(spots) {
+  const sorted = sortSpots([...spots], currentSort);
+  document.getElementById('feedGrid').innerHTML = sorted.map(s => {
+    const visited = myCheckins.has(String(s.id));
+    const cnt = checkinCounts[String(s.id)] || 0;
+    const thumb = s.anime_img
+      ? '<img class="spot-card-img" src="' + s.anime_img + '" alt="" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=spot-card-emoji>' + (s.emoji||'📍') + '</div>\'">'
+      : '<div class="spot-card-emoji">' + (s.emoji||'📍') + '</div>';
+    return '<a class="spot-card" href="/spot.html?id=' + s.id + '">' +
+      '<div class="spot-card-thumb">' + thumb +
+        (visited ? '<div class="spot-card-visited">✓ 行った！</div>' : '') +
+      '</div>' +
+      '<div class="spot-card-body">' +
+        '<div class="spot-card-work">' + s.work + '</div>' +
+        '<div class="spot-card-title">' + s.title + '</div>' +
+        '<div class="spot-card-meta">' +
+          '<span class="spot-card-loc">📍 ' + (s.location||'—') + '</span>' +
+          (cnt ? '<span class="spot-card-cnt">✓' + cnt + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</a>';
+  }).join('');
+}
+
+function sortSpots(spots, sort) {
+  if (sort === 'checkin') {
+    return spots.sort((a,b) => (checkinCounts[String(b.id)]||0) - (checkinCounts[String(a.id)]||0));
+  }
+  if (sort === 'work') {
+    return spots.sort((a,b) => (a.work||'').localeCompare(b.work||'', 'ja'));
+  }
+  // 新着順: created_at があれば使用、なければ元の順序を維持
+  if (spots[0]?.created_at) {
+    return spots.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+  return spots; // 元の順序（count.desc）
+}
+
+function setSort(sort) {
+  currentSort = sort;
+  ['sortNew','sortCheckin','sortWork'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { new:'sortNew', checkin:'sortCheckin', work:'sortWork' };
+  document.getElementById(map[sort])?.classList.add('active');
+  renderFeed(filteredSpots);
+}
+
+function showTab(tab) {
+  const isFeed = tab === 'feed';
+  document.body.classList.toggle('feed-active', isFeed);
+  document.getElementById('tabFeed').classList.toggle('active', isFeed);
+  document.getElementById('tabMap').classList.toggle('active', !isFeed);
+  if (isFeed) renderFeed(filteredSpots);
+  else setTimeout(() => map.invalidateSize(), 50);
+}
+// ────────────────────────────────────────────────────────────
+
 // Boot
 function hideSplash(){
   const s=document.getElementById('loading');
@@ -862,6 +984,9 @@ function showError(msg){
     document.getElementById('errorMsg').textContent=msg;
   },1500);
 }
+
+// 初期状態はフィード
+document.body.classList.add('feed-active');
 
 setTimeout(async()=>{
   try{
@@ -877,12 +1002,14 @@ setTimeout(async()=>{
     renderMarkers(filteredSpots);
     renderDrawerList(filteredSpots);
     renderMenu(allSpots);
+    renderFeed(filteredSpots);
 
     // 登録後のズームイン（?zLat=&zLng= が付いている場合）
     const _p = new URLSearchParams(location.search);
     const _zLat = parseFloat(_p.get('zLat'));
     const _zLng = parseFloat(_p.get('zLng'));
     if (_zLat && _zLng) {
+      showTab('map');
       // まず全体を表示してからズームイン
       map.fitBounds(L.latLngBounds(allSpots.map(s=>[s.lat,s.lng])),{padding:[60,80]});
       hideSplash();
