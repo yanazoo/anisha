@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>スポット詳細 — アニしゃ</title>
+<link href="https://fonts.googleapis.com/css2?family=Yomogi&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --white:#ffffff;--black:#0d0d0d;--gray:#888;--light:#f4f6f8;
+  --border:#e2e6ea;--sky:#e8f4fd;--sky2:#d0eaf8;--sky3:#b8dff5;
+  --sky-dark:#4a9cc7;--accent:#1a7fc1;--muted:#666;
+  --glass:rgba(232,244,253,0.96);--gb:rgba(74,156,199,0.45);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;background:var(--light);color:var(--black);font-family:'Yomogi',cursive;}
+
+/* HEADER */
+.sp-header{position:sticky;top:0;z-index:100;height:52px;
+  background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:12px;}
+.back-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--gb);
+  background:var(--sky);display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;flex-shrink:0;text-decoration:none;color:var(--black);}
+.back-btn:hover{background:var(--sky2);}
+.sp-header-title{font-size:16px;font-weight:700;flex:1;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis;color:var(--black);}
+.sp-header-work{font-size:10px;color:var(--accent);font-weight:700;}
+
+/* HERO */
+.hero{position:relative;background:var(--black);}
+.hero-imgs{display:flex;height:220px;}
+.hero-img-wrap{flex:1;position:relative;overflow:hidden;}
+.hero-img-wrap+.hero-img-wrap{border-left:2px solid var(--black);}
+.hero-img{width:100%;height:100%;object-fit:cover;display:block;}
+.hero-img-empty{width:100%;height:100%;display:flex;align-items:center;
+  justify-content:center;font-size:48px;background:var(--sky2);}
+.hero-label{position:absolute;bottom:0;left:0;right:0;padding:4px 10px;
+  background:rgba(0,0,0,0.55);color:#fff;font-size:9px;font-weight:700;
+  letter-spacing:.1em;text-align:center;}
+
+/* MAIN CONTENT */
+.sp-body{padding:0 0 100px;}
+
+/* INFO CARD */
+.info-card{background:#fff;margin:12px;border-radius:14px;
+  border:1px solid var(--border);padding:18px 16px;
+  box-shadow:0 2px 10px rgba(74,156,199,0.08);}
+.sp-title{font-size:26px;line-height:1.2;margin-bottom:4px;}
+.sp-work{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px;}
+.sp-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.sp-tag{font-size:10px;color:var(--sky-dark);background:var(--sky);
+  border:1px solid var(--gb);padding:3px 10px;border-radius:5px;}
+
+/* ACTION BUTTONS */
+.sp-actions{display:flex;gap:8px;margin-top:4px;}
+.sp-btn{flex:1;height:44px;border-radius:10px;font-family:'Yomogi',cursive;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+  border:1.5px solid var(--gb);background:var(--sky);color:var(--black);}
+.sp-btn:hover{background:var(--sky2);border-color:var(--sky-dark);}
+.sp-btn:active{transform:scale(0.96);}
+.sp-btn.fill{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sp-btn.fill:hover{background:#1568a0;}
+.sp-btn.checkin-done{background:#27ae60;border-color:#27ae60;color:#fff;}
+.sp-btn.checkin-done:hover{background:#219a52;}
+
+/* STATS */
+.stats-row{display:flex;gap:8px;margin:0 12px 0;}
+.stat-box{flex:1;background:#fff;border-radius:10px;border:1px solid var(--border);
+  padding:12px 10px;text-align:center;box-shadow:0 2px 8px rgba(74,156,199,0.06);}
+.stat-num{font-size:26px;color:var(--accent);line-height:1;}
+.stat-label{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.08em;}
+
+/* MAP */
+.map-card{background:#fff;margin:12px;border-radius:14px;
+  border:1px solid var(--border);overflow:hidden;
+  box-shadow:0 2px 10px rgba(74,156,199,0.08);}
+.map-card-header{padding:12px 16px 8px;display:flex;align-items:center;
+  justify-content:space-between;}
+.map-card-title{font-size:13px;font-weight:700;color:var(--black);}
+.map-navi-btn{height:32px;padding:0 14px;border-radius:6px;
+  background:var(--accent);border:none;color:#fff;font-family:'Yomogi',cursive;
+  font-size:11px;font-weight:700;cursor:pointer;}
+#miniMap{height:200px;width:100%;}
+.leaflet-tile{filter:saturate(0.4) brightness(1.05);}
+
+/* REVIEWS */
+.reviews-card{background:#fff;margin:12px;border-radius:14px;
+  border:1px solid var(--border);padding:16px;
+  box-shadow:0 2px 10px rgba(74,156,199,0.08);}
+.section-title{font-size:14px;font-weight:700;color:var(--black);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;}
+.section-badge{font-size:10px;color:var(--white);background:var(--accent);
+  padding:2px 8px;border-radius:10px;}
+.review-form{margin-bottom:16px;}
+.review-textarea{width:100%;height:80px;padding:10px 12px;
+  background:var(--sky);border:1px solid var(--gb);border-radius:8px;
+  font-family:'Yomogi',cursive;font-size:12px;color:var(--black);
+  outline:none;resize:none;transition:border-color .2s;}
+.review-textarea:focus{border-color:var(--sky-dark);background:#fff;}
+.review-textarea::placeholder{color:#aac4d8;}
+.review-submit{margin-top:6px;height:36px;padding:0 20px;border-radius:8px;
+  background:var(--accent);border:none;color:#fff;font-family:'Yomogi',cursive;
+  font-size:11px;font-weight:700;cursor:pointer;}
+.review-item{padding:12px 0;border-top:1px solid var(--border);}
+.review-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.review-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;
+  border:1.5px solid var(--sky3);flex-shrink:0;background:var(--sky2);}
+.review-name{font-size:12px;font-weight:700;flex:1;}
+.review-date{font-size:10px;color:var(--muted);}
+.review-text{font-size:12px;line-height:1.8;color:var(--black);}
+.review-empty{font-size:12px;color:var(--muted);text-align:center;
+  padding:20px 0;letter-spacing:.06em;}
+
+/* LOADING */
+.sp-loading{min-height:60vh;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;}
+.sp-loading-logo{font-size:40px;color:var(--accent);}
+.sp-loading-bar{width:120px;height:2px;background:var(--sky3);border-radius:1px;overflow:hidden;}
+.sp-loading-fill{height:100%;background:var(--accent);animation:ls 1.4s ease-in-out infinite;}
+@keyframes ls{0%{width:0;margin-left:0}50%{width:60%}100%{width:0;margin-left:100%}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--glass);border:1px solid var(--gb);backdrop-filter:blur(16px);
+  color:var(--black);padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;
+  box-shadow:0 4px 20px rgba(74,156,199,0.2);transition:transform .25s;z-index:2000;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+@media(min-width:640px){
+  .hero-imgs{height:300px;}
+  .sp-body{max-width:600px;margin:0 auto;}
+}
+</style>
+</head>
+<body>
+
+<header class="sp-header">
+  <a class="back-btn" href="/" id="backBtn">←</a>
+  <div>
+    <div class="sp-header-title" id="hTitle">読み込み中...</div>
+    <div class="sp-header-work" id="hWork"></div>
+  </div>
+</header>
+
+<div id="mainContent">
+  <div class="sp-loading">
+    <div class="sp-loading-logo">アニしゃ</div>
+    <div class="sp-loading-bar"><div class="sp-loading-fill"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://zzpfnszijxkfxtietilr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cGZuc3ppanhrZnh0aWV0aWxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTI2MzMsImV4cCI6MjA5MDU4ODYzM30.gqVLopJ3kveG1YwAcF6LQ7GFS2tZ0VRlHAG7M4je2Z0';
+
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+let spot = null;
+let checkinCount = 0;
+let myCheckedIn = false;
+
+sbClient.auth.onAuthStateChange((event, session) => {
+  currentUser = session?.user || null;
+  if (spot) updateCheckinUI();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── データ取得 ─────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const spotId = params.get('id');
+if (!spotId) location.href = '/';
+
+async function init() {
+  try {
+    // スポット情報取得
+    const [spotRes, checkinRes] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/spots?id=eq.' + spotId + '&select=*', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      }),
+      fetch(SUPABASE_URL + '/rest/v1/checkins?select=user_id&spot_id=eq.' + spotId, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      })
+    ]);
+
+    const spots = await spotRes.json();
+    if (!spots || spots.length === 0) { showError('スポットが見つかりません'); return; }
+    spot = spots[0];
+
+    const checkins = await checkinRes.json();
+    checkinCount = checkins.length;
+
+    // 自分のチェックイン確認
+    const session = (await sbClient.auth.getSession()).data.session;
+    currentUser = session?.user || null;
+    if (currentUser) {
+      myCheckedIn = checkins.some(c => c.user_id === currentUser.id);
+    }
+
+    // レビュー取得
+    const reviewRes = await fetch(
+      SUPABASE_URL + '/rest/v1/reviews?select=*,user:user_id(id,raw_user_meta_data)&spot_id=eq.' + spotId + '&order=created_at.desc',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    const reviews = reviewRes.ok ? await reviewRes.json() : [];
+
+    renderPage(reviews);
+  } catch(e) {
+    console.error(e);
+    showError('読み込みに失敗しました: ' + e.message);
+  }
+}
+
+function renderPage(reviews) {
+  const s = spot;
+  document.title = s.title + ' — アニしゃ';
+  document.getElementById('hTitle').textContent = s.title;
+  document.getElementById('hWork').textContent = s.work;
+
+  const tagColors = {kimi:'#e05a6a',slam:'#2ecc71',tenki:'#7c5cbf',other:'#e6a817'};
+  const tagHtml = [
+    s.location && '<span class="sp-tag">📍 ' + s.location + '</span>',
+    s.diff     && '<span class="sp-tag">' + s.diff + '</span>',
+    s.ep       && '<span class="sp-tag">' + s.ep + '</span>',
+    s.status === 'official' && '<span class="sp-tag">⭐ 公式聖地</span>',
+  ].filter(Boolean).join('');
+
+  const checkinLabel = myCheckedIn ? '✓ 行った！' : '🗺 行った！';
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="hero">
+      <div class="hero-imgs">
+        <div class="hero-img-wrap">
+          ${s.anime_img
+            ? '<img class="hero-img" src="'+s.anime_img+'" alt="アニメシーン" onerror="this.parentElement.innerHTML=\'<div class=hero-img-empty>🎬</div>\'">'
+            : '<div class="hero-img-empty">🎬</div>'}
+          <div class="hero-label">🎬 ANIME</div>
+        </div>
+        <div class="hero-img-wrap">
+          ${s.real_img
+            ? '<img class="hero-img" src="'+s.real_img+'" alt="実際の場所" onerror="this.parentElement.innerHTML=\'<div class=hero-img-empty>📍</div>\'">'
+            : '<div class="hero-img-empty">📍</div>'}
+          <div class="hero-label">📍 REAL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-body">
+      <div class="info-card">
+        <div class="sp-title">${s.title}</div>
+        <div class="sp-work">${s.work}${s.ep ? ' — ' + s.ep : ''}</div>
+        <div class="sp-tags">${tagHtml}</div>
+        <div class="sp-actions">
+          <button class="sp-btn ${myCheckedIn ? 'checkin-done' : ''}" id="checkinBtn" onclick="toggleCheckin()">
+            ${checkinLabel}${checkinCount ? ' (' + checkinCount + ')' : ''}
+          </button>
+          <button class="sp-btn fill" onclick="openNavi()">📍 Navigate</button>
+          <button class="sp-btn" onclick="shareSpot()">📤 シェア</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num" id="statCheckin">${checkinCount}</div>
+          <div class="stat-label">行った人</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${(s.count||0).toLocaleString()}</div>
+          <div class="stat-label">写真投稿数</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">${s.status === 'official' ? '⭐' : s.status === 'confirmed' ? '✓' : '?'}</div>
+          <div class="stat-label">${s.status === 'official' ? '公式' : s.status === 'confirmed' ? '確定' : '未確認'}</div>
+        </div>
+      </div>
+
+      <div class="map-card">
+        <div class="map-card-header">
+          <div class="map-card-title">📍 場所</div>
+          <button class="map-navi-btn" onclick="openNavi()">Google Maps で開く</button>
+        </div>
+        <div id="miniMap"></div>
+      </div>
+
+      <div class="reviews-card">
+        <div class="section-title">
+          みんなの訪問レポート
+          <span class="section-badge" id="reviewCount">${reviews.length}</span>
+        </div>
+        <div class="review-form" id="reviewForm">
+          <textarea class="review-textarea" id="reviewText" placeholder="${currentUser ? 'このスポットの感想を書いてみよう...' : 'ログインするとレビューを書けます'}"></textarea>
+          <button class="review-submit" onclick="submitReview()">投稿する</button>
+        </div>
+        <div id="reviewList">
+          ${renderReviews(reviews)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // ミニマップ初期化
+  setTimeout(() => {
+    const miniMap = L.map('miniMap', { zoomControl: false, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 19
+    }).addTo(miniMap);
+    miniMap.setView([s.lat, s.lng], 15);
+    L.marker([s.lat, s.lng]).addTo(miniMap);
+    // タップで地図操作を有効化
+    miniMap.on('click', () => miniMap.scrollWheelZoom.enable());
+  }, 100);
+}
+
+function renderReviews(reviews) {
+  if (!reviews || reviews.length === 0) {
+    return '<div class="review-empty">まだレビューがありません。最初の訪問レポートを書いてみよう！</div>';
+  }
+  return reviews.map(r => {
+    const meta = r.user?.raw_user_meta_data || {};
+    const name = meta.full_name || meta.name || 'ユーザー';
+    const avatar = meta.avatar_url || meta.picture || '';
+    const date = new Date(r.created_at).toLocaleDateString('ja-JP');
+    const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a9cc7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+    return `<div class="review-item">
+      <div class="review-header">
+        <img class="review-avatar" src="${avatar||fallbackSvg}" onerror="this.src='${fallbackSvg}'" alt="${name}">
+        <div class="review-name">${name}</div>
+        <div class="review-date">${date}</div>
+      </div>
+      <div class="review-text">${r.body.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCheckinUI() {
+  const btn = document.getElementById('checkinBtn');
+  if (!btn) return;
+  btn.textContent = (myCheckedIn ? '✓ 行った！' : '🗺 行った！') + (checkinCount ? ' (' + checkinCount + ')' : '');
+  btn.className = 'sp-btn ' + (myCheckedIn ? 'checkin-done' : '');
+  const el = document.getElementById('statCheckin');
+  if (el) el.textContent = checkinCount;
+}
+
+async function toggleCheckin() {
+  if (!currentUser) {
+    showToast('チェックインにはログインが必要です');
+    setTimeout(() => location.href = '/', 1500);
+    return;
+  }
+  const token = (await sbClient.auth.getSession()).data.session?.access_token;
+  const sid = String(spotId);
+  if (myCheckedIn) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/checkins?user_id=eq.' + currentUser.id + '&spot_id=eq.' + sid, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token }
+    });
+    if (res.ok || res.status === 204) {
+      myCheckedIn = false;
+      checkinCount = Math.max(0, checkinCount - 1);
+      showToast('チェックインを取り消しました');
+      updateCheckinUI();
+    }
+  } else {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/checkins', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ user_id: currentUser.id, spot_id: sid })
+    });
+    if (res.ok || res.status === 201) {
+      myCheckedIn = true;
+      checkinCount++;
+      showToast('🎉 行った！チェックイン完了！');
+      updateCheckinUI();
+    }
+  }
+}
+
+async function submitReview() {
+  if (!currentUser) { showToast('レビューにはログインが必要です'); return; }
+  const body = document.getElementById('reviewText').value.trim();
+  if (!body) { showToast('レビュー内容を入力してください'); return; }
+  const token = (await sbClient.auth.getSession()).data.session?.access_token;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/reviews', {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ user_id: currentUser.id, spot_id: String(spotId), body })
+  });
+  if (res.ok || res.status === 201) {
+    showToast('レビューを投稿しました！');
+    document.getElementById('reviewText').value = '';
+    // レビュー一覧を再取得
+    const r2 = await fetch(
+      SUPABASE_URL + '/rest/v1/reviews?select=*,user:user_id(id,raw_user_meta_data)&spot_id=eq.' + spotId + '&order=created_at.desc',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+    );
+    if (r2.ok) {
+      const reviews = await r2.json();
+      document.getElementById('reviewList').innerHTML = renderReviews(reviews);
+      document.getElementById('reviewCount').textContent = reviews.length;
+    }
+  } else {
+    showToast('投稿に失敗しました');
+  }
+}
+
+function openNavi() {
+  if (!spot) return;
+  window.open('https://www.google.com/maps/search/?api=1&query=' + spot.lat + ',' + spot.lng, '_blank');
+}
+
+function shareSpot() {
+  if (navigator.share && spot) {
+    navigator.share({ title: spot.title + ' — アニしゃ', text: spot.work + 'の聖地「' + spot.title + '」', url: location.href });
+  } else {
+    navigator.clipboard.writeText(location.href).then(() => showToast('URLをコピーしました'));
+  }
+}
+
+function showError(msg) {
+  document.getElementById('mainContent').innerHTML =
+    '<div class="sp-loading"><div style="font-size:32px;color:#c0392b">エラー</div>' +
+    '<div style="font-size:12px;color:#666;text-align:center;max-width:280px;line-height:1.8">' + msg + '</div>' +
+    '<a href="/" style="font-size:12px;color:var(--accent)">← トップに戻る</a></div>';
+}
+
+init();
+</script>
+</body>
+</html>

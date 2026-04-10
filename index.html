@@ -409,6 +409,7 @@ z-index:2000;white-space:nowrap;}
         <div class="detail-actions">
           <button class="d-btn" id="detailCheckinBtn" onclick="toggleCheckin(currentSpot&&currentSpot.id)">🗺 行った！</button>
           <button class="d-btn fill" onclick="openNavi()">📍 Navigate</button>
+          <a class="d-btn" id="detailSpotLink" href="#" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--black)">詳細 →</a>
           <button class="d-btn close" onclick="closeDetail()">✕</button>
         </div>
       </div>
@@ -436,6 +437,7 @@ z-index:2000;white-space:nowrap;}
     <div class="sheet-btns">
       <button class="d-btn" id="sheetCheckinBtn" onclick="toggleCheckin(currentSpot&&currentSpot.id)">🗺 行った！</button>
       <button class="d-btn fill" onclick="openNavi()">📍 Navigate</button>
+      <a class="d-btn" id="sheetSpotLink" href="#" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--black)">詳細 →</a>
       <button class="d-btn close" onclick="closeDetail()">✕</button>
     </div>
   </div>
@@ -625,7 +627,7 @@ function makePopupHtml(s){
     '</div>'+
     '<div style="display:flex;gap:6px;">'+
       '<button class="popup-cta'+(visited?' checkin-done':'')+'" style="flex:1" onclick="toggleCheckin(\''+s.id+'\')">'+(visited?'✓ 行った！':'🗺 行った！')+'</button>'+
-      '<a class="popup-cta" href="'+_imgUrl+'" target="_blank" rel="noopener" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:#fff;font-family:\'Yomogi\',cursive;">🔍 検索</a>'+
+      '<a class="popup-cta" href="/spot.html?id='+s.id+'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:#fff;font-family:\'Yomogi\',cursive;">詳細 →</a>'+
     '</div>'+
     '</div>';
 }
@@ -691,6 +693,8 @@ function selectSpot(id){
   document.getElementById('spotDrawer').classList.remove('expanded');
   drawerOpen=false;
   updateCheckinButton(s.id);
+  const detailLink='/spot.html?id='+s.id;
+  ['detailSpotLink','sheetSpotLink'].forEach(lid=>{const el=document.getElementById(lid);if(el)el.href=detailLink;});
 }
 
 function closeDetail(){
