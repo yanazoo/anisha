@@ -265,6 +265,7 @@ function renderPage(reviews) {
         <div class="sp-title">${s.title}</div>
         <div class="sp-work">${s.work}${s.ep ? ' — ' + s.ep : ''}</div>
         <div class="sp-tags">${tagHtml}</div>
+        ${s.user_name ? '<div style="font-size:10px;color:var(--muted);margin-bottom:10px;">📝 ' + s.user_name + ' が登録</div>' : ''}
         <div class="sp-actions">
           <button class="sp-btn ${myCheckedIn ? 'checkin-done' : ''}" id="checkinBtn" onclick="toggleCheckin()">
             ${checkinLabel}${checkinCount ? ' (' + checkinCount + ')' : ''}

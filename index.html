@@ -135,6 +135,7 @@ cursor:pointer;transition:background .15s;border-top:1px solid var(--border);}
 .spot-card-meta{display:flex;align-items:center;gap:4px;}
 .spot-card-loc{font-size:9px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .spot-card-cnt{font-size:9px;color:#27ae60;flex-shrink:0;font-weight:700;}
+.spot-card-user{font-size:9px;color:var(--muted);margin-top:3px;}
 
 /* MAP VIEW — タブ導入後はtop:96px */
 .map-wrap{position:fixed;top:96px;left:0;right:0;bottom:0;z-index:1;}
@@ -934,6 +935,7 @@ function renderFeed(spots) {
           '<span class="spot-card-loc">📍 ' + (s.location||'—') + '</span>' +
           (cnt ? '<span class="spot-card-cnt">✓' + cnt + '</span>' : '') +
         '</div>' +
+        (s.user_name ? '<div class="spot-card-user">by ' + s.user_name + '</div>' : '') +
       '</div>' +
     '</a>';
   }).join('');

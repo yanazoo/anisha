@@ -1516,6 +1516,18 @@ async function submitSpot(status) {
   // ログイン済みユーザーのJWTを優先使用
   const authToken = (await sbClient.auth.getSession())?.data?.session?.access_token || SUPABASE_KEY;
 
+  // プロフィールのニックネームを取得
+  if (currentUser) {
+    try {
+      const pRes = await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + currentUser.id + '&select=username', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + authToken }
+      });
+      const pData = pRes.ok ? await pRes.json() : [];
+      const meta = currentUser.user_metadata || {};
+      spot.user_name = pData[0]?.username || meta.full_name || meta.name || null;
+    } catch(e) { /* 取得失敗時はnullのまま */ }
+  }
+
   try {
     const res = await fetch(SUPABASE_URL + '/rest/v1/spots', {
       method: 'POST',
