@@ -1,8 +1,9 @@
 // analyze.js — Groq (primary) + Gemini (fallback)
 // 注意: このファイルはiPhoneのGitHubアプリで直接編集しないこと（文字化けの原因）
 
-const GROQ_MODEL  = 'llama-3.3-70b-versatile'; // LLaMA 3.3 70B (Groq推奨・高精度)
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GROQ_VISION_MODEL = 'llama-3.2-11b-vision-preview'; // 画像あり用（ビジョン対応）
+const GROQ_TEXT_MODEL   = 'llama-3.3-70b-versatile';      // テキストのみ用（高精度）
+const GEMINI_MODEL      = 'gemini-2.0-flash-lite';         // フォールバック（クォータ多め）
 
 const handler = async function(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -59,6 +60,8 @@ const handler = async function(req, res) {
 
 // ── Groq 呼び出し ─────────────────────────────────────
 async function callGroq(apiKey, prompt, body) {
+  const hasImage = !!(body.imageBase64 || body.imageUrl);
+  const model = hasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL;
   const content = [];
 
   if (body.imageBase64) {
@@ -71,6 +74,8 @@ async function callGroq(apiKey, prompt, body) {
   }
   content.push({ type: 'text', text: prompt });
 
+  console.log('Groq model:', model, 'hasImage:', hasImage);
+
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -78,7 +83,7 @@ async function callGroq(apiKey, prompt, body) {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model,
       messages: [{ role: 'user', content }],
       temperature: 0.2,
       max_tokens: 1024
