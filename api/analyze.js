@@ -1,7 +1,7 @@
 // analyze.js — Groq (primary) + Gemini (fallback)
 // 注意: このファイルはiPhoneのGitHubアプリで直接編集しないこと（文字化けの原因）
 
-const GROQ_MODEL  = 'meta-llama/llama-4-maverick-17b-128e-instruct'; // LLaMA 4 Maverick (高精度)
+const GROQ_MODEL  = 'llama-3.3-70b-versatile'; // LLaMA 3.3 70B (Groq推奨・高精度)
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
 const handler = async function(req, res) {
